@@ -23,7 +23,7 @@ const OAuthButton = ({
     await signIn.authenticateWithRedirect({
       strategy: "oauth_google",
       redirectUrl: "/signin",
-      redirectUrlComplete: "/dashboard",
+      redirectUrlComplete: "/models",
     });
   };
 
