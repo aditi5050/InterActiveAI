@@ -1,6 +1,6 @@
 "use client";
 
-import { useClerk } from "@clerk/nextjs";
+import { useSignIn } from "@clerk/nextjs";
 import React from "react";
 import Image from "next/image";
 
@@ -14,18 +14,18 @@ const OAuthButton = ({
   icon: React.ReactNode, 
   label: string 
 }) => {
-  const { openSignIn } = useClerk();
+  const { isLoaded, signIn } = useSignIn();
 
-  const handleSignIn = React.useCallback(async () => {
-    try {
-      await openSignIn({
-        strategy: strategy,
-        redirectUrl: '/dashboard'
-      });
-    } catch (err) {
-      console.error("OAuth error", err);
+  const handleSignIn = async () => {
+    if (!isLoaded) {
+      return;
     }
-  }, [openSignIn, strategy]);
+    await signIn.authenticateWithRedirect({
+      strategy: "oauth_google",
+      redirectUrl: "/signin",
+      redirectUrlComplete: "/dashboard",
+    });
+  };
 
   const isPrimary = strategy === "oauth_figma";
 
