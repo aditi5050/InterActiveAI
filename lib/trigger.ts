@@ -1,13 +1,18 @@
-import { TriggerClient } from "@trigger.dev/sdk";
+import { configure } from "@trigger.dev/sdk/v3";
 import { generateText, generateVision } from "@/lib/integrations/gemini";
 import { cropImage, extractFrame } from "@/lib/integrations/transloadit";
 
 // Real Trigger.dev Client Configuration
-export const client = new TriggerClient({
-  id: "weavy-phase-2",
-  apiKey: process.env.TRIGGER_API_KEY!,
-  apiUrl: process.env.TRIGGER_API_URL || "https://api.trigger.dev",
+configure({
+  baseURL: process.env.TRIGGER_API_URL || "https://api.trigger.dev",
+  secretKey: process.env.TRIGGER_SECRET_KEY!,
 });
+
+// We no longer instantiate a class, we use the global configuration.
+// If we needed to trigger tasks, we would use `tasks.trigger` or similar from the SDK tasks module.
+// However, since we are wrapping the execution logic ourselves in Phase 2/3 (using our own engine),
+// we don't strictly need the TriggerClient class to *execute* these functions locally in our engine loop.
+// The engine calls these functions directly.
 
 // Define Real Tasks
 // In a production setup, these should be registered with client.defineJob or defineTask

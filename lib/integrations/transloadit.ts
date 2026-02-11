@@ -1,4 +1,4 @@
-import Transloadit from 'transloadit';
+import { Transloadit } from 'transloadit';
 
 const key = process.env.TRANSLOADIT_KEY;
 const secret = process.env.TRANSLOADIT_SECRET;
@@ -16,19 +16,14 @@ const transloadit = new Transloadit({
 async function runAssembly(params: any) {
   if (!key || !secret) throw new Error("Transloadit credentials missing");
 
-  return new Promise((resolve, reject) => {
-    transloadit.createAssembly(params, (err: any, result: any) => {
-      if (err) {
-        return reject(err);
-      }
-      // Wait for completion? 
-      // createAssembly returns immediately usually, unless we wait.
-      // Ideally we should use notify_url or wait: true (if using SDK options).
-      // The SDK callback 'result' contains the status.
-      // If we want to wait for the result, we might need 'waitForCompletion'.
-      resolve(result);
-    });
-  });
+  try {
+    // The `createAssembly` method returns a promise directly.
+    const result = await transloadit.createAssembly(params);
+    return result;
+  } catch (err) {
+    console.error("[TRANSLOADIT_ASSEMBLY_ERROR]", err);
+    throw err;
+  }
 }
 
 export async function cropImage(imageUrl: string, options: { width?: number; height?: number; aspectRatio?: string } = {}) {
