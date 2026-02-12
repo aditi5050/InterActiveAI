@@ -227,6 +227,7 @@ export default function FlowEditor({ workflowId }: FlowEditorProps) {
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
         fitView
+        className="dark"
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
       >
         <Background

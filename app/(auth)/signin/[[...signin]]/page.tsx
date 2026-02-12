@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useSignIn } from '@clerk/nextjs';
+import { useState, useEffect } from 'react';
+import { useSignIn, useUser } from '@clerk/nextjs';
 import { OAuthStrategy } from '@clerk/types';
+import { useRouter } from 'next/navigation';
 
 const WeavyLogoSVG = () => (
   <svg width="228" height="41" viewBox="0 0 228 41" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'rgb(255, 255, 255)', cursor: 'pointer' }}>
@@ -64,27 +65,59 @@ const MicrosoftLogoSVG = () => (
 
 export default function Page() {
   const { signIn, isLoaded } = useSignIn();
+  const { isSignedIn, isLoaded: isUserLoaded } = useUser();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already signed in
+  useEffect(() => {
+    if (isUserLoaded && isSignedIn) {
+      router.push('/flow');
+    }
+  }, [isUserLoaded, isSignedIn, router]);
 
   const handleOAuthSignIn = async (provider: 'google' | 'figma' | 'microsoft') => {
     if (!isLoaded || !signIn) return;
     
+    // If already signed in, redirect to flow
+    if (isSignedIn) {
+      router.push('/flow');
+      return;
+    }
+    
+    // Figma is coming soon
+    if (provider === 'figma') {
+      // You can replace this with a toast notification if available
+      console.log("Figma authentication coming soon");
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Map provider names to Clerk OAuth strategies
+      // Removed oauth_figma as it is not a valid strategy in the current types
       const strategyMap: Record<string, OAuthStrategy> = {
         google: 'oauth_google',
-        figma: 'oauth_figma',
         microsoft: 'oauth_microsoft'
       };
 
+      const strategy = strategyMap[provider];
+      if (!strategy) return;
+
       await signIn.authenticateWithRedirect({
-        strategy: strategyMap[provider] as OAuthStrategy,
+        strategy: strategy,
         redirectUrl: '/sso-callback',
         redirectUrlComplete: '/flow',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
+      
+      // Handle "Session already exists" error by redirecting to flow
+      if (error?.errors?.[0]?.code === 'session_exists') {
+        router.push('/flow');
+        return;
+      }
+      
       setIsLoading(false);
     }
   };
