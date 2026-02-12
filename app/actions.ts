@@ -12,6 +12,16 @@ export async function createNewWorkflow() {
     throw new Error('Unauthorized');
   }
 
+  // Ensure user exists in database
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {},
+    create: {
+      id: userId,
+      email: `user-${userId}@placeholder.com`,
+    },
+  });
+
   // Create a new workflow for the user
   const newWorkflow = await prisma.workflow.create({
     data: {

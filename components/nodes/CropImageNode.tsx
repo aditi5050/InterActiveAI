@@ -1,39 +1,53 @@
 import React, { useCallback } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Crop } from 'lucide-react';
+import { Crop, Trash2 } from 'lucide-react';
 import { useWorkflowEditorStore } from '@/stores/workflowEditorStore';
 
 export function CropImageNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useWorkflowEditorStore((state) => state.updateNodeData);
+  const deleteNode = useWorkflowEditorStore((state) => state.deleteNode);
 
   const onParamChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
     updateNodeData(id, { [evt.target.name]: parseInt(evt.target.value) || 0 });
   }, [id, updateNodeData]);
 
+  const onDelete = useCallback(() => {
+    deleteNode(id);
+  }, [id, deleteNode]);
+
   return (
-    <div className={`relative bg-[#1A1A23] rounded-lg shadow-sm border w-64 ${selected ? 'border-[#6F42C1] ring-2 ring-[#6F42C1]/20' : 'border-[#2A2A2F]'}`}>
-      <div className="flex items-center px-3 py-2 border-b bg-[#1E1E24] rounded-t-lg border-[#2A2A2F]">
-        <Crop className="w-4 h-4 mr-2 text-yellow-600" />
-        <span className="text-sm font-medium text-gray-200">Crop Image</span>
+    <div className={`relative bg-[#1A1A23] rounded-lg shadow-lg border w-64 ${selected ? 'border-[#6F42C1] ring-2 ring-[#6F42C1]/20' : 'border-[#2A2A2F]'}`}>
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-[#FBBF24]/10 rounded-t-lg border-[#2A2A2F]">
+        <div className="flex items-center">
+          <Crop className="w-4 h-4 mr-2 text-[#FBBF24]" />
+          <span className="text-sm font-medium text-gray-900">Crop Image</span>
+        </div>
+        <button
+          onClick={onDelete}
+          className="p-1 hover:bg-red-900/30 rounded text-gray-600 hover:text-red-600 transition-colors"
+          title="Delete node"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
       </div>
       
       <div className="p-3 space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs text-gray-400">X (%)</label>
-            <input type="number" name="x_percent" className="w-full text-xs border border-[#2A2A2F] rounded p-1 bg-[#0E0E13] text-gray-200" value={data.x_percent || 0} onChange={onParamChange} />
+            <label className="block text-xs font-medium text-black">X (%)</label>
+            <input type="number" name="x_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data.x_percent || 0} onChange={onParamChange} />
           </div>
           <div>
-            <label className="block text-xs text-gray-400">Y (%)</label>
-            <input type="number" name="y_percent" className="w-full text-xs border border-[#2A2A2F] rounded p-1 bg-[#0E0E13] text-gray-200" value={data.y_percent || 0} onChange={onParamChange} />
+            <label className="block text-xs font-medium text-black">Y (%)</label>
+            <input type="number" name="y_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data.y_percent || 0} onChange={onParamChange} />
           </div>
           <div>
-            <label className="block text-xs text-gray-400">Width (%)</label>
-            <input type="number" name="width_percent" className="w-full text-xs border border-[#2A2A2F] rounded p-1 bg-[#0E0E13] text-gray-200" value={data.width_percent || 100} onChange={onParamChange} />
+            <label className="block text-xs font-medium text-black">Width (%)</label>
+            <input type="number" name="width_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data.width_percent || 100} onChange={onParamChange} />
           </div>
           <div>
-            <label className="block text-xs text-gray-400">Height (%)</label>
-            <input type="number" name="height_percent" className="w-full text-xs border border-[#2A2A2F] rounded p-1 bg-[#0E0E13] text-gray-200" value={data.height_percent || 100} onChange={onParamChange} />
+            <label className="block text-xs font-medium text-black">Height (%)</label>
+            <input type="number" name="height_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data.height_percent || 100} onChange={onParamChange} />
           </div>
         </div>
 

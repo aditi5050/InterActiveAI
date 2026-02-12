@@ -74,6 +74,16 @@ export async function POST(
       }
     }
 
+    // Ensure user exists in database
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        email: `user-${userId}@placeholder.com`,
+      },
+    });
+
     // Create run with only required nodes
     const run = await prisma.workflowRun.create({
       data: {

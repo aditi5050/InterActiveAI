@@ -89,6 +89,16 @@ export async function POST(req: Request) {
 
     const { nodes, edges, metadata } = parsed.data;
 
+    // Ensure user exists in database
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        email: `user-${userId}@placeholder.com`,
+      },
+    });
+
     // Create new workflow
     const workflow = await prisma.workflow.create({
       data: {

@@ -37,6 +37,16 @@ export async function POST(req: Request) {
     if (workflow.userId !== userId)
       return new NextResponse("Forbidden", { status: 403 });
 
+    // Ensure user exists in database
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        email: `user-${userId}@placeholder.com`,
+      },
+    });
+
     // Create Run Record
     const run = await prisma.workflowRun.create({
       data: {
