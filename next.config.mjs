@@ -2,9 +2,24 @@
 const nextConfig = {
     experimental: {
         serverActions: {
-          allowedOrigins: ["automatic-orbit-x5vw5w5j9qppfp76-3000.app.github.dev"],
+          // Allow localhost and all GitHub Codespaces domains
+          allowedOrigins: [
+            "localhost:3000",
+            "localhost",
+          ],
         },
     },
+    // Support running behind a proxy (GitHub Codespaces)
+  headers: async () => {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

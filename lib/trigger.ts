@@ -7,10 +7,9 @@ export const llmTask = task({
   id: "task.llm",
   retry: {
     maxAttempts: 2,
-    minWaitMs: 500,
-    maxWaitMs: 2000,
+    minTimeoutInMs: 500,
+    maxTimeoutInMs: 2000,
   },
-  timeout: 120, // 2 minutes timeout for LLM calls
   run: async (payload: {
     prompt: string;
     imageUrls?: string[];
@@ -42,10 +41,9 @@ export const cropImageTask = task({
   id: "task.cropImage",
   retry: {
     maxAttempts: 2,
-    minWaitMs: 500,
-    maxWaitMs: 2000,
+    minTimeoutInMs: 500,
+    maxTimeoutInMs: 2000,
   },
-  timeout: 60,
   run: async (payload: {
     imageUrl: string;
     width?: number;
@@ -70,10 +68,9 @@ export const extractFrameTask = task({
   id: "task.extractFrame",
   retry: {
     maxAttempts: 2,
-    minWaitMs: 500,
-    maxWaitMs: 2000,
+    minTimeoutInMs: 500,
+    maxTimeoutInMs: 2000,
   },
-  timeout: 60,
   run: async (payload: {
     videoUrl: string;
     timestamp?: number;

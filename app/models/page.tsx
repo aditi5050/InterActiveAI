@@ -88,7 +88,7 @@ const ModelsPage = () => {
       {/* Main Content */}
       <main style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Armaan Ahuja's Workspace</h1>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Armaan Ahuja&apos;s Workspace</h1>
           <button style={{ 
             padding: '12px 24px', 
             backgroundColor: '#1976d2', 

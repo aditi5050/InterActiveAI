@@ -5,7 +5,8 @@ const isPublicRoute = createRouteMatcher([
   "/signin(.*)", 
   "/signup(.*)", 
   "/sso-callback(.*)", // This is crucial for OAuth redirects
-  "/assets(.*)"
+  "/assets(.*)",
+  "/api/upload(.*)",
 ]);
 
 export default clerkMiddleware((auth, req) => {

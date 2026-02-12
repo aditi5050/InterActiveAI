@@ -301,26 +301,3 @@ export const useWorkflowRuntimeStore = create<WorkflowRuntimeState>(
     },
   })
 );
-        if (!response.ok) return;
-
-        const run = await response.json();
-        
-        // Map execution status to store format
-        const newStatuses: NodeStatus = {};
-        run.nodeExecutions.forEach((exec: any) => {
-          newStatuses[exec.nodeId] = exec.status;
-        });
-
-        set({ nodeStatuses: newStatuses });
-
-        if (run.status === 'COMPLETED' || run.status === 'FAILED') {
-          clearInterval(interval);
-        }
-      } catch (error) {
-        console.error("Polling error", error);
-      }
-    }, 1000);
-  },
-
-  reset: () => set({ nodeStatuses: {}, runId: null, errors: [] })
-}));

@@ -86,7 +86,7 @@ export default function WorkflowEditor({ initialNodes, initialEdges, workflowId 
 
 
   return (
-    <div className="flex flex-col h-screen w-full bg-gray-50">
+    <div className="flex flex-col h-screen w-full bg-[#0E0E13]">
       <EditorNavbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
@@ -99,11 +99,20 @@ export default function WorkflowEditor({ initialNodes, initialEdges, workflowId 
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             fitView
-            className="bg-gray-50"
+            style={{ background: '#0E0E13' }}
           >
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} color="#cbd5e1" />
+            <Background color="#65616b" gap={20} size={1} />
             <Controls />
-            <MiniMap style={{ height: 120 }} zoomable pannable />
+            <MiniMap 
+              style={{ 
+                height: 120,
+                backgroundColor: '#1A1A20',
+                borderRadius: '8px',
+                border: '1px solid #2A2A2F'
+              }} 
+              zoomable 
+              pannable 
+            />
           </ReactFlow>
         </div>
         <HistoryPanel workflowId={workflowId} />

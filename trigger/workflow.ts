@@ -3,6 +3,76 @@ import prisma from "@/lib/prisma";
 import { llmTask, cropImageTask, extractFrameTask } from "@/lib/trigger";
 
 /**
+ * DAG Cycle Detection - prevents infinite loops in workflow execution
+ * Uses DFS to detect cycles in the directed graph
+ */
+function detectCycles(
+  nodes: any[],
+  edges: any[]
+): { hasCycle: boolean; cycleNodes?: string[] } {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const adjList = new Map<string, string[]>();
+
+  // Build adjacency list
+  for (const node of nodes) {
+    adjList.set(node.id, []);
+  }
+  for (const edge of edges) {
+    const targets = adjList.get(edge.sourceId) || [];
+    targets.push(edge.targetId);
+    adjList.set(edge.sourceId, targets);
+  }
+
+  const WHITE = 0; // Not visited
+  const GRAY = 1; // Visiting
+  const BLACK = 2; // Visited
+  const colors = new Map<string, number>();
+  const parent = new Map<string, string>();
+
+  // Initialize colors
+  for (const nodeId of adjList.keys()) {
+    colors.set(nodeId, WHITE);
+  }
+
+  function dfs(nodeId: string, path: string[]): boolean {
+    colors.set(nodeId, GRAY);
+    path.push(nodeId);
+
+    const neighbors = adjList.get(nodeId) || [];
+    for (const neighborId of neighbors) {
+      if (colors.get(neighborId) === GRAY) {
+        // Back edge found - cycle detected
+        console.error(
+          `[WORKFLOW] Cycle detected: ${path.join(" -> ")} -> ${neighborId}`
+        );
+        return true;
+      }
+      if (colors.get(neighborId) === WHITE) {
+        if (dfs(neighborId, [...path])) {
+          return true;
+        }
+      }
+    }
+
+    colors.set(nodeId, BLACK);
+    return false;
+  }
+
+  for (const nodeId of adjList.keys()) {
+    if (colors.get(nodeId) === WHITE) {
+      if (dfs(nodeId, [])) {
+        return {
+          hasCycle: true,
+          cycleNodes: nodes.map((n) => n.label).filter((_, i) => i < 3),
+        };
+      }
+    }
+  }
+
+  return { hasCycle: false };
+}
+
+/**
  * Workflow execution job - runs in Trigger.dev worker
  * Handles DAG execution with retries, and progressive persistence
  */
@@ -48,13 +118,22 @@ export const workflowRunJob = task({
         throw new Error("Unauthorized");
       }
 
+      const nodes = run.workflow.nodes;
+      const edges = run.workflow.edges;
+
+      // Detect cycles before execution
+      const cycleCheck = detectCycles(nodes, edges);
+      if (cycleCheck.hasCycle) {
+        throw new Error(
+          `Workflow contains a cycle and cannot be executed: ${cycleCheck.cycleNodes?.join(" -> ") || "Unknown cycle"}`
+        );
+      }
+
       await prisma.workflowRun.update({
         where: { id: runId },
         data: { status: "RUNNING", startedAt: new Date() },
       });
 
-      const nodes = run.workflow.nodes;
-      const edges = run.workflow.edges;
       let nodeExecutions = run.nodeExecutions;
 
       // Compute required subgraph if selectedNodeIds provided

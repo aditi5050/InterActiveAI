@@ -10,36 +10,36 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 h-full flex flex-col p-4 z-10">
+    <aside className="w-64 bg-[#0E0E13] border-r border-[#2A2A2F] h-full flex flex-col p-4 z-10">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Workflow</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">Nodes</h2>
         <input 
           type="text" 
           placeholder="Search nodes..." 
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-[#2A2A2F] rounded-lg text-sm bg-[#1A1A20] text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6F42C1] focus:border-transparent transition-all"
         />
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Access</h3>
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Access</h3>
         <div className="space-y-2">
           <div className="dndnode" onDragStart={(event) => onDragStart(event, 'textNode')} draggable>
-            <SidebarButton icon={<Type className="w-4 h-4" />} label="Text Node" color="bg-blue-100 text-blue-600" />
+            <SidebarButton icon={<Type className="w-4 h-4" />} label="Text" color="text-blue-400" bgColor="bg-blue-400/10" />
           </div>
           <div className="dndnode" onDragStart={(event) => onDragStart(event, 'uploadImageNode')} draggable>
-            <SidebarButton icon={<Image className="w-4 h-4" />} label="Upload Image" color="bg-green-100 text-green-600" />
+            <SidebarButton icon={<Image className="w-4 h-4" />} label="Upload Image" color="text-green-400" bgColor="bg-green-400/10" />
           </div>
           <div className="dndnode" onDragStart={(event) => onDragStart(event, 'uploadVideoNode')} draggable>
-            <SidebarButton icon={<Video className="w-4 h-4" />} label="Upload Video" color="bg-red-100 text-red-600" />
+            <SidebarButton icon={<Video className="w-4 h-4" />} label="Upload Video" color="text-red-400" bgColor="bg-red-400/10" />
           </div>
           <div className="dndnode" onDragStart={(event) => onDragStart(event, 'llmNode')} draggable>
-            <SidebarButton icon={<Cpu className="w-4 h-4" />} label="Run Any LLM" color="bg-purple-100 text-purple-600" />
+            <SidebarButton icon={<Cpu className="w-4 h-4" />} label="LLM Model" color="text-purple-400" bgColor="bg-purple-400/10" />
           </div>
           <div className="dndnode" onDragStart={(event) => onDragStart(event, 'cropImageNode')} draggable>
-            <SidebarButton icon={<Crop className="w-4 h-4" />} label="Crop Image" color="bg-yellow-100 text-yellow-600" />
+            <SidebarButton icon={<Crop className="w-4 h-4" />} label="Crop Image" color="text-yellow-400" bgColor="bg-yellow-400/10" />
           </div>
           <div className="dndnode" onDragStart={(event) => onDragStart(event, 'extractFrameNode')} draggable>
-            <SidebarButton icon={<Film className="w-4 h-4" />} label="Extract Frame" color="bg-indigo-100 text-indigo-600" />
+            <SidebarButton icon={<Film className="w-4 h-4" />} label="Extract Frame" color="text-indigo-400" bgColor="bg-indigo-400/10" />
           </div>
         </div>
       </div>
@@ -47,13 +47,13 @@ export default function Sidebar() {
   );
 }
 
-function SidebarButton({ icon, label, color }: { icon: React.ReactNode, label: string, color: string }) {
+function SidebarButton({ icon, label, color, bgColor }: { icon: React.ReactNode, label: string, color: string, bgColor: string }) {
   return (
-    <div className="flex items-center p-3 rounded-lg border border-gray-200 hover:border-purple-500 hover:shadow-sm cursor-grab transition-all bg-white group">
-      <div className={`p-2 rounded-md mr-3 ${color} group-hover:scale-110 transition-transform`}>
+    <div className="flex items-center p-3 rounded-lg border border-[#2A2A2F] hover:border-[#6F42C1] hover:bg-[#1A1A20] cursor-grab active:cursor-grabbing transition-all bg-[#1E1E24] group">
+      <div className={`p-2 rounded-md mr-3 ${bgColor} ${color} group-hover:scale-110 transition-transform`}>
         {icon}
       </div>
-      <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{label}</span>
+      <span className="text-sm font-medium text-gray-300 group-hover:text-white">{label}</span>
     </div>
   );
 }

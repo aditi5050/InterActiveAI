@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSignIn } from '@clerk/nextjs';
+import { OAuthStrategy } from '@clerk/types';
 
 const WeavyLogoSVG = () => (
   <svg width="228" height="41" viewBox="0 0 228 41" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'rgb(255, 255, 255)', cursor: 'pointer' }}>
@@ -62,15 +63,26 @@ const MicrosoftLogoSVG = () => (
 );
 
 export default function Page() {
-  const router = useRouter();
+  const { signIn, isLoaded } = useSignIn();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleOAuthSignIn = async (provider: 'google' | 'figma' | 'microsoft') => {
+    if (!isLoaded || !signIn) return;
+    
     setIsLoading(true);
     try {
-      setTimeout(() => {
-        router.push('/flow');
-      }, 1000);
+      // Map provider names to Clerk OAuth strategies
+      const strategyMap: Record<string, OAuthStrategy> = {
+        google: 'oauth_google',
+        figma: 'oauth_figma',
+        microsoft: 'oauth_microsoft'
+      };
+
+      await signIn.authenticateWithRedirect({
+        strategy: strategyMap[provider] as OAuthStrategy,
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/flow',
+      });
     } catch (error) {
       console.error('Sign in error:', error);
       setIsLoading(false);
@@ -106,7 +118,7 @@ export default function Page() {
               <div style={{ backgroundColor: 'white', padding: '32px 24px', borderRadius: '0 0 8px 8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>
                 <h1 style={{ fontSize: '32px', fontWeight: 500, textAlign: 'center', marginBottom: '12px', color: 'rgb(33, 33, 38)' }}>Welcome to Weavy</h1>
                 <p style={{ fontSize: '13px', color: 'rgb(100, 100, 100)', textAlign: 'center', marginBottom: '24px', lineHeight: 1.5 }}>
-                  By clicking "Log in with Figma, Google, or Microsoft", you agree to{' '}
+                  By clicking &quot;Log in with Figma, Google, or Microsoft&quot;, you agree to{' '}
                   <a href="https://content.weavy.ai/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: 'rgb(25, 103, 210)', textDecoration: 'underline' }}>
                     Weavy Terms of Service
                   </a>{' '}
