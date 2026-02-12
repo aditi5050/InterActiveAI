@@ -8,10 +8,13 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey || "mock_key");
 
-export async function generateText(prompt: string, modelName: string = "gemini-pro") {
+export async function generateText(
+  prompt: string,
+  modelName: string = "gemini-1.5-flash"
+) {
   try {
     if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
-    
+
     const model = genAI.getGenerativeModel({ model: modelName });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -22,25 +25,36 @@ export async function generateText(prompt: string, modelName: string = "gemini-p
   }
 }
 
-export async function generateVision(prompt: string, imageUrl: string, modelName: string = "gemini-pro-vision") {
+export async function generateVision(
+  prompt: string,
+  imageUrls: string | string[],
+  modelName: string = "gemini-1.5-flash"
+) {
   try {
     if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
 
     const model = genAI.getGenerativeModel({ model: modelName });
-    
-    // Fetch image and convert to proper format for Gemini
-    // Note: Gemini API expects Part objects. 
-    // For URL inputs, we might need to fetch the image buffer first.
-    const imageResp = await fetch(imageUrl);
-    const imageBuffer = await imageResp.arrayBuffer();
-    const imageData = {
-      inlineData: {
-        data: Buffer.from(imageBuffer).toString("base64"),
-        mimeType: imageResp.headers.get("content-type") || "image/jpeg"
-      }
-    };
 
-    const result = await model.generateContent([prompt, imageData]);
+    // Normalize imageUrls to array
+    const urls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
+
+    // Fetch and convert images to base64
+    const imageParts = await Promise.all(
+      urls.map(async (url) => {
+        const imageResp = await fetch(url);
+        const imageBuffer = await imageResp.arrayBuffer();
+        return {
+          inlineData: {
+            data: Buffer.from(imageBuffer).toString("base64"),
+            mimeType: imageResp.headers.get("content-type") || "image/jpeg",
+          },
+        };
+      })
+    );
+
+    const content = [prompt, ...imageParts];
+
+    const result = await model.generateContent(content);
     const response = await result.response;
     return response.text();
   } catch (error) {

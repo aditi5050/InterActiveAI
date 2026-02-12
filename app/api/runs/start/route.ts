@@ -1,7 +1,8 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { runWorkflowEngine } from '@/lib/engine';
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { startRunSchema } from "@/lib/validations/api";
+import { workflowRunJob } from "@/trigger/workflow";
 
 export async function POST(req: Request) {
   try {
@@ -12,40 +13,52 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    const { workflowId, inputs } = body;
-
-    if (!workflowId) {
-      return new NextResponse("Workflow ID required", { status: 400 });
+    // Validate with Zod
+    const parsed = startRunSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request",
+          details: parsed.error.flatten(),
+        },
+        { status: 400 }
+      );
     }
+
+    const { workflowId, inputs } = parsed.data;
 
     // Verify ownership
     const workflow = await prisma.workflow.findUnique({
       where: { id: workflowId },
-      include: { nodes: true }
+      include: { nodes: true },
     });
 
     if (!workflow) return new NextResponse("Not Found", { status: 404 });
-    if (workflow.userId !== userId) return new NextResponse("Forbidden", { status: 403 });
+    if (workflow.userId !== userId)
+      return new NextResponse("Forbidden", { status: 403 });
 
     // Create Run Record
     const run = await prisma.workflowRun.create({
       data: {
         workflowId,
         userId,
-        status: 'PENDING',
-        // Initialize node executions
+        status: "PENDING",
         nodeExecutions: {
-          create: workflow.nodes.map((node: any) => ({
+          create: workflow.nodes.map((node) => ({
             nodeId: node.id,
-            status: 'PENDING'
-          }))
-        }
-      }
+            status: "PENDING",
+          })),
+        },
+      },
     });
 
-    // Fire and forget execution logic so we return runId immediately
-    runWorkflowEngine(run.id, inputs).catch(err => {
-      console.error("Failed to trigger workflow", err);
+    // Queue Trigger.dev Job (non-blocking)
+    // The job will handle all execution logic in the worker
+    await workflowRunJob.trigger({
+      runId: run.id,
+      workflowId,
+      userId,
+      inputs,
     });
 
     return NextResponse.json({ runId: run.id });

@@ -1,72 +1,92 @@
-import { configure } from "@trigger.dev/sdk/v3";
+import { task } from "@trigger.dev/sdk/v3";
 import { generateText, generateVision } from "@/lib/integrations/gemini";
 import { cropImage, extractFrame } from "@/lib/integrations/transloadit";
 
-// Real Trigger.dev Client Configuration
-configure({
-  baseURL: process.env.TRIGGER_API_URL || "https://api.trigger.dev",
-  secretKey: process.env.TRIGGER_SECRET_KEY!,
+// LLM Execution Task (Trigger.dev managed)
+export const llmTask = task({
+  id: "task.llm",
+  retry: {
+    maxAttempts: 2,
+    minWaitMs: 500,
+    maxWaitMs: 2000,
+  },
+  timeout: 120, // 2 minutes timeout for LLM calls
+  run: async (payload: {
+    prompt: string;
+    imageUrls?: string[];
+    model?: string;
+  }) => {
+    console.log("[LLM_TASK]", payload);
+    try {
+      if (payload.imageUrls && payload.imageUrls.length > 0) {
+        return await generateVision(
+          payload.prompt,
+          payload.imageUrls,
+          payload.model || "gemini-1.5-flash"
+        );
+      } else {
+        return await generateText(
+          payload.prompt,
+          payload.model || "gemini-1.5-flash"
+        );
+      }
+    } catch (error) {
+      console.error("[LLM_TASK_ERROR]", error);
+      throw error;
+    }
+  },
 });
 
-// We no longer instantiate a class, we use the global configuration.
-// If we needed to trigger tasks, we would use `tasks.trigger` or similar from the SDK tasks module.
-// However, since we are wrapping the execution logic ourselves in Phase 2/3 (using our own engine),
-// we don't strictly need the TriggerClient class to *execute* these functions locally in our engine loop.
-// The engine calls these functions directly.
-
-// Define Real Tasks
-// In a production setup, these should be registered with client.defineJob or defineTask
-// For the context of this execution engine, we are wrapping these as async functions
-// that the engine calls. The engine itself might be running inside a Trigger.dev job
-// or orchestrating these calls.
-
-// If the Engine is the orchestrator, these functions act as the "Job Executors".
-
-export const llmTask = async (payload: { prompt: string; imageUrl?: string; model?: string }) => {
-  console.log("Executing LLM Task", payload);
-  try {
-    if (payload.imageUrl) {
-      return await generateVision(payload.prompt, payload.imageUrl, payload.model);
-    } else {
-      return await generateText(payload.prompt, payload.model);
+// Crop Image Task
+export const cropImageTask = task({
+  id: "task.cropImage",
+  retry: {
+    maxAttempts: 2,
+    minWaitMs: 500,
+    maxWaitMs: 2000,
+  },
+  timeout: 60,
+  run: async (payload: {
+    imageUrl: string;
+    width?: number;
+    height?: number;
+  }) => {
+    console.log("[CROP_TASK]", payload);
+    try {
+      const url = await cropImage(payload.imageUrl, {
+        width: payload.width,
+        height: payload.height,
+      });
+      return { url };
+    } catch (error) {
+      console.error("[CROP_TASK_ERROR]", error);
+      throw error;
     }
-  } catch (error) {
-    console.error("LLM Task Failed", error);
-    throw error;
-  }
-};
+  },
+});
 
-export const cropImageTask = async (payload: { imageUrl: string; width?: number; height?: number }) => {
-  console.log("Executing Crop Task", payload);
-  try {
-    const url = await cropImage(payload.imageUrl, { width: payload.width, height: payload.height });
-    return { url };
-  } catch (error) {
-    console.error("Crop Task Failed", error);
-    throw error;
-  }
-};
-
-export const extractFrameTask = async (payload: { videoUrl: string; timestamp?: number }) => {
-  console.log("Executing Extract Frame Task", payload);
-  try {
-    const url = await extractFrame(payload.videoUrl, payload.timestamp);
-    return { url };
-  } catch (error) {
-    console.error("Extract Frame Task Failed", error);
-    throw error;
-  }
-};
-
-export const uploadProxyTask = async (payload: any) => {
-  // For file upload, typically the file is uploaded directly to Transloadit/S3 via signed URL
-  // from the client, or via an API route. 
-  // If this task represents "Processing an uploaded file", it might just pass through or
-  // move the file to permanent storage.
-  console.log("Executing Upload Proxy Task", payload);
-  // In Phase 2, we assume the input IS the URL (already uploaded via client/API).
-  // So we just return it or validate it.
-  return { url: payload.url || payload.filename }; // If filename is actually a URL
-};
+// Extract Frame Task
+export const extractFrameTask = task({
+  id: "task.extractFrame",
+  retry: {
+    maxAttempts: 2,
+    minWaitMs: 500,
+    maxWaitMs: 2000,
+  },
+  timeout: 60,
+  run: async (payload: {
+    videoUrl: string;
+    timestamp?: number;
+  }) => {
+    console.log("[EXTRACT_FRAME_TASK]", payload);
+    try {
+      const url = await extractFrame(payload.videoUrl, payload.timestamp);
+      return { url };
+    } catch (error) {
+      console.error("[EXTRACT_FRAME_TASK_ERROR]", error);
+      throw error;
+    }
+  },
+});
 
 
