@@ -74,6 +74,12 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
         )}
       </div>
       <Handle
+        type="target"
+        position={Position.Left}
+        id="input"
+        className="w-3 h-3 bg-[#6F42C1] border-2 border-[#6F42C1]"
+      />
+      <Handle
         type="source"
         position={Position.Right}
         id="output"

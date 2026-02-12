@@ -24,12 +24,20 @@ export function TextNode({ id, data, selected }: NodeProps) {
       <div className="p-3">
         <label className="block text-xs font-medium text-gray-400 mb-1">Text Content</label>
         <textarea
-          className="w-full px-2 py-1 text-sm border border-[#2A2A2F] rounded focus:outline-none focus:ring-1 focus:ring-[#6F42C1] min-h-[80px] resize-y bg-[#0E0E13] text-gray-200"
+          className="w-full px-2 py-1 text-sm border border-[#2A2A2F] rounded focus:outline-none focus:ring-1 focus:ring-[#6F42C1] min-h-[80px] resize-y bg-[#0E0E13]"
           placeholder="Enter text here..."
+          style={{ color: '#e5e7eb' }}
           value={data.text || ''}
           onChange={onChange}
         />
       </div>
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="input"
+        className="w-3 h-3 border-2 border-[#1E1E24]"
+        style={{ background: '#6F42C1' }}
+      />
       <Handle
         type="source"
         position={Position.Right}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { MessageSquareText, Image, Video, Sparkles, Crop, Film } from 'lucide-react';
 import ReactFlow, { 
   Background, 
@@ -23,6 +23,7 @@ import { UploadVideoNode } from '@/components/nodes/UploadVideoNode';
 import { LLMNode } from '@/components/nodes/LLMNode';
 import { CropImageNode } from '@/components/nodes/CropImageNode';
 import { ExtractFrameNode } from '@/components/nodes/ExtractFrameNode';
+import { useWorkflowEditorStore } from '@/stores/workflowEditorStore';
 
 const nodeTypes = {
   textNode: TextNode,
@@ -42,17 +43,30 @@ export default function WeavyEditor({ flowId }: WeavyEditorProps) {
   const [activeTab, setActiveTab] = useState('recent');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  // React Flow state
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  // Get state from Zustand store
+  const { 
+    nodes, 
+    edges, 
+    onNodesChange, 
+    onEdgesChange, 
+    setWorkflow 
+  } = useWorkflowEditorStore();
+
   const [reactFlowInstance, setReactFlowInstance] = useState<any | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
+  
+  // Execution state
+  const [isSaving, setIsSaving] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  // Drop handlers
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
+  // Initialize workflow on mount
+  useEffect(() => {
+    if (flowId) {
+      setWorkflow(flowId, 'Untitled Workflow', [], []);
+    }
+  }, [flowId, setWorkflow]);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
@@ -70,30 +84,133 @@ export default function WeavyEditor({ flowId }: WeavyEditorProps) {
         y: event.clientY - bounds.top,
       });
 
+      // Initialize node data based on node type
+      let nodeData: any = { label: `${type} Node` };
+      switch (type) {
+        case 'textNode':
+          nodeData = { text: '', label: 'Text Node' };
+          break;
+        case 'uploadImageNode':
+          nodeData = { image: null, label: 'Upload Image' };
+          break;
+        case 'uploadVideoNode':
+          nodeData = { video: null, label: 'Upload Video' };
+          break;
+        case 'llmNode':
+          nodeData = { prompt: '', model: 'gemini-pro', label: 'LLM Node' };
+          break;
+        case 'cropImageNode':
+          nodeData = { x: 0, y: 0, width: 100, height: 100, label: 'Crop Image' };
+          break;
+        case 'extractFrameNode':
+          nodeData = { frameIndex: 0, label: 'Extract Frame' };
+          break;
+      }
+
       const newNode: Node = {
         id: uuidv4(),
         type,
         position,
-        data: { label: `${type} Node` },
+        data: nodeData,
       };
 
-      setNodes((nds) => [...nds, newNode]);
+      // Update store instead of setNodes
+      const { nodes: currentNodes } = useWorkflowEditorStore.getState();
+      useWorkflowEditorStore.setState({ nodes: [...currentNodes, newNode] });
     },
-    [reactFlowInstance, setNodes]
+    [reactFlowInstance]
   );
 
-  const onConnect = useCallback(
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  // Handle connections between nodes
+  const handleConnect = useCallback(
     (connection: Connection) => {
       const newEdge = {
         ...connection,
-        id: uuidv4(),
+        id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
         animated: true,
         style: { stroke: '#6F42C1' },
       };
-      setEdges((eds) => addEdge(newEdge, eds));
+      const { edges: currentEdges } = useWorkflowEditorStore.getState();
+      useWorkflowEditorStore.setState({ 
+        edges: addEdge(newEdge, currentEdges) 
+      });
     },
-    [setEdges]
+    []
   );
+
+  // Save workflow to database
+  const handleSave = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/workflows/${flowId}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Untitled Workflow',
+          definition: {
+            nodes,
+            edges,
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save workflow');
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('[SAVE_ERROR]', error);
+      alert('Failed to save workflow');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [flowId, nodes, edges]);
+
+  // Trigger workflow execution
+  const handleRun = useCallback(async () => {
+    // Save first
+    setIsSaving(true);
+    try {
+      const saveResponse = await fetch(`/api/workflows/${flowId}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Untitled Workflow',
+          definition: {
+            nodes,
+            edges,
+          },
+        }),
+      });
+
+      if (!saveResponse.ok) throw new Error('Failed to save workflow');
+      setLastSaved(new Date());
+
+      // Then run
+      setIsRunning(true);
+      const runResponse = await fetch('/api/runs/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflowId: flowId,
+          inputs: {},
+        }),
+      });
+
+      if (!runResponse.ok) throw new Error('Failed to start workflow');
+      const { runId: newRunId } = await runResponse.json();
+      setRunId(newRunId);
+    } catch (error) {
+      console.error('[RUN_ERROR]', error);
+      alert('Failed to run workflow');
+    } finally {
+      setIsSaving(false);
+      setIsRunning(false);
+    }
+  }, [flowId, nodes, edges]);
 
   return (
     <div id="weavy-main" style={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex' }}>
@@ -233,39 +350,95 @@ export default function WeavyEditor({ flowId }: WeavyEditorProps) {
       </div>
 
       {/* Main Canvas Area */}
-      <div ref={reactFlowWrapper} style={{ flexGrow: 1, position: 'relative', marginLeft: isSidebarOpen ? '296px' : '56px', transition: 'margin-left 0.2s' }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          nodeTypes={nodeTypes}
-          onInit={setReactFlowInstance}
-          fitView
-          className="dark"
-          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-          style={{ background: 'rgb(14, 14, 19)' }}
-        >
-          <Background 
-            variant={BackgroundVariant.Dots}
-            gap={20}
-            size={1}
-            color="#65616b"
-          />
-          <Controls style={{ bottom: 20, left: 20 }} />
-          <MiniMap
+      <div ref={reactFlowWrapper} style={{ flexGrow: 1, position: 'relative', marginLeft: isSidebarOpen ? '296px' : '56px', transition: 'margin-left 0.2s', display: 'flex', flexDirection: 'column' }}>
+        {/* Toolbar */}
+        <div style={{ padding: '12px 16px', background: '#1E1E24', borderBottom: '1px solid #2A2A2F', display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
             style={{
-              height: 120,
-              backgroundColor: "rgba(0,0,0,0.2)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              padding: '8px 16px',
+              background: '#6F42C1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
+              opacity: isSaving ? 0.6 : 1,
+              transition: 'all 0.2s',
             }}
-            zoomable
-            pannable
-          />
-        </ReactFlow>
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+
+          <button
+            onClick={handleRun}
+            disabled={isRunning || isSaving}
+            style={{
+              padding: '8px 16px',
+              background: '#10B981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: isRunning || isSaving ? 'not-allowed' : 'pointer',
+              opacity: isRunning || isSaving ? 0.6 : 1,
+              transition: 'all 0.2s',
+            }}
+          >
+            {isRunning ? 'Running...' : 'Run'}
+          </button>
+
+          {lastSaved && (
+            <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#888' }}>
+              Last saved: {lastSaved.toLocaleTimeString()}
+            </span>
+          )}
+
+          {runId && (
+            <span style={{ fontSize: '12px', color: '#10B981' }}>
+              Run ID: {runId.slice(0, 8)}...
+            </span>
+          )}
+        </div>
+
+        {/* React Flow Canvas */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={handleConnect}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            nodeTypes={nodeTypes}
+            onInit={setReactFlowInstance}
+            fitView
+            className="dark"
+            defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+            style={{ background: 'rgb(14, 14, 19)' }}
+          >
+            <Background 
+              variant={BackgroundVariant.Dots}
+              gap={20}
+              size={1}
+              color="#65616b"
+            />
+            <Controls style={{ bottom: 20, left: 20 }} />
+            <MiniMap
+              style={{
+                height: 120,
+                backgroundColor: "rgba(0,0,0,0.2)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+              zoomable
+              pannable
+            />
+          </ReactFlow>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 {
   "/flow/page": "app/flow/page.js",
+  "/api/upload/route": "app/api/upload/route.js",
+  "/api/workflows/[id]/save/route": "app/api/workflows/[id]/save/route.js",
   "/page": "app/page.js",
   "/flow/[id]/page": "app/flow/[id]/page.js"
 }
