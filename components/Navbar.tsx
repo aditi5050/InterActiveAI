@@ -128,7 +128,7 @@ export default function Navbar() {
               Request a Demo
             </a>
             <a
-              href="https://app.weavy.ai/signin"
+              href="/signin"
               className="nav_text-link w-variant-138f51c6-a923-3c01-fe1a-d27a5c95ed04"
             >
               Sign In

@@ -63,8 +63,7 @@ export default function Footer() {
             className="mobile_footer-ctas"
           >
             <a
-              href="https://app.weavy.ai/signin"
-              target="_blank"
+              href="/signin"
               className="button_mobile-primary w-inline-block"
             >
               <div>START NOW</div>
@@ -225,7 +224,7 @@ export default function Footer() {
       </div>
       <a
         id="try_now_bottom"
-        href="https://app.weavy.ai/signin"
+        href="/signin"
         className="footer_cta-button-desktop w-inline-block"
       >
         <div> Start Now</div>

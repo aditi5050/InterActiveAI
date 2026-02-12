@@ -1,13 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["gsap"],
-  // output: "export", // Disabled for dynamic API routes
-  // Actually, let's stick to standard build unless user asked for static.
-  // User asked for "npm run dev without hydration errors".
-  reactStrictMode: true,
-  images: {
-    unoptimized: true, // Necessary for local images unless we configure domains or loader
-  },
+    experimental: {
+        serverActions: {
+          allowedOrigins: ["automatic-orbit-x5vw5w5j9qppfp76-3000.app.github.dev"],
+        },
+    },
 };
 
 export default nextConfig;

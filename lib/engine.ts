@@ -1,12 +1,9 @@
 import prisma from './prisma';
 import { llmTask, cropImageTask, extractFrameTask, uploadProxyTask } from './trigger';
 
-// 7. Implement Parallel Execution Engine (Server Side)
-
 export async function runWorkflowEngine(runId: string, initialInputs: any) {
   console.log(`[ENGINE] Starting run ${runId}`);
   
-  // 1. Load Workflow and Run State
   const run = await prisma.workflowRun.findUnique({
     where: { id: runId },
     include: {
@@ -25,7 +22,6 @@ export async function runWorkflowEngine(runId: string, initialInputs: any) {
     return;
   }
 
-  // Update status to RUNNING
   await prisma.workflowRun.update({
     where: { id: runId },
     data: { status: 'RUNNING', startedAt: new Date() }
@@ -35,13 +31,12 @@ export async function runWorkflowEngine(runId: string, initialInputs: any) {
   const edges = run.workflow.edges;
   let nodeExecutions = run.nodeExecutions;
 
-  // Helper to get execution for a node
   const getExecution = (nodeId: string) => nodeExecutions.find((ne: any) => ne.nodeId === nodeId);
 
   // Helper to check if node is ready (all parents completed)
   const isReady = (nodeId: string) => {
     const parentEdges = edges.filter((e: any) => e.targetId === nodeId);
-    if (parentEdges.length === 0) return true; // No parents, ready to run (if not already running/done)
+    if (parentEdges.length === 0) return true; // No parents, ready to run
 
     return parentEdges.every((edge: any) => {
       const parentExec = getExecution(edge.sourceId);
@@ -49,17 +44,10 @@ export async function runWorkflowEngine(runId: string, initialInputs: any) {
     });
   };
 
-  // Execution Loop
-  // In a real system, this might be event-driven. Here we'll simulate a loop or recursion.
-  // We'll iterate until all are processed or stuck.
-  
   let changed = true;
   while (changed) {
     changed = false;
     
-    // Refresh executions state in memory (in real app, re-fetch from DB if distributed)
-    // Here we just use the local array which we update.
-
     // Find nodes that are PENDING and Ready
     const readyNodes = nodes.filter((node: any) => {
       const exec = getExecution(node.id);
@@ -83,39 +71,109 @@ export async function runWorkflowEngine(runId: string, initialInputs: any) {
         try {
           // Gather Inputs
           const parentEdges = edges.filter((e: any) => e.targetId === node.id);
-          const nodeInputs = { ...initialInputs, ...node.config as any }; // Merge config
+          const nodeInputs: any = { ...initialInputs, ...(node.config as any) }; 
           
           for (const edge of parentEdges) {
             const parentExec = getExecution(edge.sourceId);
             if (parentExec?.outputs) {
-              // Simple merging strategy: merge all parent outputs
-              // In real graph, we'd map handles
-              Object.assign(nodeInputs, parentExec.outputs);
+              const outputs: any = parentExec.outputs;
+              // If targetHandle is specified, map specifically
+              if (edge.targetHandle) {
+                // If output has 'output' key (standard), use it, otherwise use 'text' or 'url' or the whole object
+                const val = outputs.output || outputs.text || outputs.url || outputs; 
+                
+                // Special handling for 'images' array input
+                if (edge.targetHandle === 'images') {
+                   if (!nodeInputs.images) nodeInputs.images = [];
+                   if (Array.isArray(val)) {
+                     nodeInputs.images.push(...val);
+                   } else {
+                     nodeInputs.images.push(val);
+                   }
+                } else {
+                   nodeInputs[edge.targetHandle] = val;
+                }
+              } else {
+                // Fallback merge
+                Object.assign(nodeInputs, outputs);
+              }
             }
           }
 
           // Execute Task
-          let output = {};
+          let output: any = {};
           const startTime = Date.now();
           
           switch (node.type) {
-            case 'llm':
-              output = await llmTask({ prompt: nodeInputs.text || nodeInputs.prompt || "Default Prompt" });
+            case 'llmNode':
+              const system = nodeInputs.system_prompt;
+              const user = nodeInputs.user_message;
+              const images = nodeInputs.images; // Array of URLs
+              const model = (node.config as any)?.model;
+              
+              // Construct prompt
+              let fullPrompt = "";
+              if (system) fullPrompt += `System: ${system}\n\n`;
+              if (user) fullPrompt += `User: ${user}`;
+              if (!fullPrompt && nodeInputs.prompt) fullPrompt = nodeInputs.prompt;
+              if (!fullPrompt) fullPrompt = "Explain this."; // Fallback
+
+              // Handle images (if array or single)
+              // llmTask supports single imageUrl currently. 
+              let imageUrl = images;
+              if (Array.isArray(images) && images.length > 0) {
+                 imageUrl = images[0]; // TODO: Support multiple images in llmTask
+              } else if (!imageUrl && nodeInputs.image) {
+                 imageUrl = nodeInputs.image;
+              }
+
+              if (imageUrl) {
+                 const result = await llmTask({ prompt: fullPrompt, imageUrl, model: model || 'gemini-1.5-flash' });
+                 output = { output: result, text: result };
+              } else {
+                 const result = await llmTask({ prompt: fullPrompt, model: model || 'gemini-1.5-flash' });
+                 output = { output: result, text: result };
+              }
               break;
-            case 'crop_image':
-              output = await cropImageTask({ imageUrl: nodeInputs.url });
+
+            case 'cropImageNode':
+              const cropUrl = nodeInputs.image_url || nodeInputs.url || nodeInputs.image;
+              if (!cropUrl) throw new Error("No image URL provided");
+              
+              const cropResult = await cropImageTask({ 
+                imageUrl: cropUrl, 
+                width: (node.config as any)?.width_percent, // passing percent as width? needs conversion or task adjustment
+                height: (node.config as any)?.height_percent
+              });
+              output = { output: cropResult.url, url: cropResult.url };
               break;
-            case 'extract_frame':
-              output = await extractFrameTask({ videoUrl: nodeInputs.url });
+
+            case 'extractFrameNode':
+              const videoUrl = nodeInputs.video_url || nodeInputs.url || nodeInputs.video;
+              if (!videoUrl) throw new Error("No video URL provided");
+
+              const frameResult = await extractFrameTask({ 
+                videoUrl: videoUrl,
+                timestamp: parseFloat((node.config as any)?.timestamp || nodeInputs.timestamp || '0')
+              });
+              output = { output: frameResult.url, url: frameResult.url, image: frameResult.url };
               break;
-            case 'upload_image':
-            case 'upload_video':
-              output = await uploadProxyTask({ filename: "upload" });
+
+            case 'uploadImageNode':
+              const fileUrl = (node.config as any)?.imageUrl;
+              output = { output: fileUrl, url: fileUrl };
               break;
-            case 'text':
-              // Pass through config text
-              output = { text: (node.config as any)?.text };
+              
+            case 'uploadVideoNode':
+              const vidUrl = (node.config as any)?.videoUrl;
+              output = { output: vidUrl, url: vidUrl };
               break;
+
+            case 'textNode':
+              const text = (node.config as any)?.text;
+              output = { output: text, text: text };
+              break;
+
             default:
               console.warn(`Unknown node type ${node.type}`);
               output = { status: "skipped" };
@@ -151,11 +209,15 @@ export async function runWorkflowEngine(runId: string, initialInputs: any) {
           // For now, we continue but dependents won't run.
         }
       }));
+    } else {
+      // If we didn't find any NEW ready nodes, we stop.
+      // But we must ensure all pending nodes are actually blocked, not just waiting for async execution (Promise.all handles that).
+      break;
     }
   }
 
   // Check final status
-  const allCompleted = nodeExecutions.every((ne: any) => ne.status === 'COMPLETED' || ne.status === 'SKIPPED'); // Simplification
+  const allCompleted = nodeExecutions.every((ne: any) => ne.status === 'COMPLETED' || ne.status === 'SKIPPED');
   const anyFailed = nodeExecutions.some((ne: any) => ne.status === 'FAILED');
 
   if (anyFailed) {

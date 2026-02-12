@@ -21,3 +21,5 @@ declare namespace JSX {
     };
   }
 }
+
+declare module 'reactflow/dist/style.css';

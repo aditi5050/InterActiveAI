@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Weavy - Pro-grade design workflows, Powered by any AI model" />
+    <link rel="apple-touch-icon" href="/android-chrome-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <script src="https://kit.fontawesome.com/682403751a.js" crossorigin="anonymous"></script>
+    <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+
+    <!-- Google Tag Manager -->
+    <script>
+      (function(w,d,s,l,i){
+        w[l]=w[l]||[];
+        w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+
+        if (f && f.parentNode) {
+          f.parentNode.insertBefore(j, f);
+        }
+      })(window,document,'script','dataLayer','GTM-PW3B9LZJ');
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <!-- firstpromoter -->
+    <script>(function(w){w.fpr=w.fpr||function(){w.fpr.q = w.fpr.q||[];w.fpr.q[arguments[0]=='set'?'unshift':'push'](arguments);};})(window);
+    fpr("init", {cid:"vzajpas8"});
+    fpr("click");
+    </script>
+    <script src="https://cdn.firstpromoter.com/fpr.js" async></script>
+    <!-- firstpromoter -->
+
+
+    <title>Weavy</title>
+    <script type="module" crossorigin src="/assets/index-D-p7jEX2.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-MDM5-E_U.js">
+    <link rel="modulepreload" crossorigin href="/assets/three-B94r_4al.js">
+    <link rel="modulepreload" crossorigin href="/assets/three-stdlib-IcB7Uzbc.js">
+    <link rel="modulepreload" crossorigin href="/assets/designer-Ccqs-lxm.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CCpS2Lqj.css">
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PW3B9LZJ"
+                      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+     <script>
+      window.WEAVY_VERSION = "4.0.45";
+      console.log(`
+████████    ████████    ████████
+████████    ████████    ████████
+████████    ████████    ████████
+████████    ████████    ████████
+████████    ████████    ████████
+████████    ████████    ████████
+████████    ████████    ████████
+████████    ████████    ████████
+      ████████    ████████      
+      ████████    ████████      
+      ████████    ████████      
+      ████████    ████████       
+  ${window.WEAVY_VERSION[0] == '{' ? '' : 'Version: ' + window.WEAVY_VERSION}  
+`);
+     </script>
+  </body>
+</html>

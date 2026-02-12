@@ -1,52 +1,92 @@
-// import { TriggerClient } from "@trigger.dev/sdk";
+import { task } from "@trigger.dev/sdk/v3";
+import { generateText, generateVision } from "@/lib/integrations/gemini";
+import { cropImage, extractFrame } from "@/lib/integrations/transloadit";
 
-export const client = {
-  // Mock client for Phase 1
-  defineJob: () => {},
-  defineTask: () => {}
-};
-
-/*
-export const client = new TriggerClient({
-  id: "weavy-phase-1",
-  apiKey: process.env.TRIGGER_API_KEY || "tr_dev_mock_key",
-  apiUrl: process.env.TRIGGER_API_URL || "https://api.trigger.dev",
+// LLM Execution Task (Trigger.dev managed)
+export const llmTask = task({
+  id: "task.llm",
+  retry: {
+    maxAttempts: 2,
+    minWaitMs: 500,
+    maxWaitMs: 2000,
+  },
+  timeout: 120, // 2 minutes timeout for LLM calls
+  run: async (payload: {
+    prompt: string;
+    imageUrls?: string[];
+    model?: string;
+  }) => {
+    console.log("[LLM_TASK]", payload);
+    try {
+      if (payload.imageUrls && payload.imageUrls.length > 0) {
+        return await generateVision(
+          payload.prompt,
+          payload.imageUrls,
+          payload.model || "gemini-1.5-flash"
+        );
+      } else {
+        return await generateText(
+          payload.prompt,
+          payload.model || "gemini-1.5-flash"
+        );
+      }
+    } catch (error) {
+      console.error("[LLM_TASK_ERROR]", error);
+      throw error;
+    }
+  },
 });
-*/
 
-// Mock Tasks
-// In a real app these would be client.defineJob or defineTask
-// For Phase 1 stubs, we'll simulate the interface
+// Crop Image Task
+export const cropImageTask = task({
+  id: "task.cropImage",
+  retry: {
+    maxAttempts: 2,
+    minWaitMs: 500,
+    maxWaitMs: 2000,
+  },
+  timeout: 60,
+  run: async (payload: {
+    imageUrl: string;
+    width?: number;
+    height?: number;
+  }) => {
+    console.log("[CROP_TASK]", payload);
+    try {
+      const url = await cropImage(payload.imageUrl, {
+        width: payload.width,
+        height: payload.height,
+      });
+      return { url };
+    } catch (error) {
+      console.error("[CROP_TASK_ERROR]", error);
+      throw error;
+    }
+  },
+});
 
-export const llmTask = async (payload: any) => {
-  console.log("Executing LLM Task", payload);
-  await new Promise(r => setTimeout(r, 1000)); // Simulate delay
-  return { text: "This is a mocked LLM response for " + payload.prompt };
-};
+// Extract Frame Task
+export const extractFrameTask = task({
+  id: "task.extractFrame",
+  retry: {
+    maxAttempts: 2,
+    minWaitMs: 500,
+    maxWaitMs: 2000,
+  },
+  timeout: 60,
+  run: async (payload: {
+    videoUrl: string;
+    timestamp?: number;
+  }) => {
+    console.log("[EXTRACT_FRAME_TASK]", payload);
+    try {
+      const url = await extractFrame(payload.videoUrl, payload.timestamp);
+      return { url };
+    } catch (error) {
+      console.error("[EXTRACT_FRAME_TASK_ERROR]", error);
+      throw error;
+    }
+  },
+});
 
-export const cropImageTask = async (payload: any) => {
-  console.log("Executing Crop Task", payload);
-  await new Promise(r => setTimeout(r, 1500));
-  return { url: "https://via.placeholder.com/500x500?text=Cropped+Image" };
-};
 
-export const extractFrameTask = async (payload: any) => {
-  console.log("Executing Extract Frame Task", payload);
-  await new Promise(r => setTimeout(r, 2000));
-  return { url: "https://via.placeholder.com/1920x1080?text=Extracted+Frame" };
-};
-
-export const uploadProxyTask = async (payload: any) => {
-  console.log("Executing Upload Task", payload);
-  await new Promise(r => setTimeout(r, 500));
-  return { url: "https://via.placeholder.com/original?text=Uploaded+Asset" };
-};
-
-// This function bridges the API route to the execution engine
-import { runWorkflowEngine } from "@/lib/engine";
-
-export const triggerWorkflow = async (runId: string, inputs: any) => {
-  // In real Trigger.dev, this would send an event.
-  // Here we just call the engine directly (async).
-  runWorkflowEngine(runId, inputs);
-};
