@@ -36,7 +36,7 @@ interface WorkflowState {
   // Actions
   setNodes: (nodes: WorkflowNode[]) => void;
   setEdges: (edges: Edge[]) => void;
-  onNodesChange: (changes: NodeChange<WorkflowNode>[]) => void;
+  onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
 
@@ -132,7 +132,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   onNodesChange: (changes) => {
     set({
-      nodes: applyNodeChanges(changes, get().nodes) as any,
+      nodes: applyNodeChanges(changes, get().nodes as any) as any,
     });
   },
 

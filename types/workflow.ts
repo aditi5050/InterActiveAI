@@ -1,6 +1,6 @@
 // Workflow type definitions
 
-import { Node, Edge } from "@xyflow/react";
+import { Node, Edge } from "reactflow";
 
 // Custom node data types with index signature for React Flow compatibility
 export interface TextNodeData {
