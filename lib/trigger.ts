@@ -21,12 +21,12 @@ export const llmTask = task({
         return await generateVision(
           payload.prompt,
           payload.imageUrls,
-          payload.model || "gemini-1.5-flash"
+          payload.model || "gemini-2.5-flash"
         );
       } else {
         return await generateText(
           payload.prompt,
-          payload.model || "gemini-1.5-flash"
+          payload.model || "gemini-2.5-flash"
         );
       }
     } catch (error) {

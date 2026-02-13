@@ -87,7 +87,7 @@ const createImageNodeData = (): ImageNodeData => ({
 
 const createLLMNodeData = (): LLMNodeData => ({
   label: "LLM",
-  model: "gemini-1.5-flash",
+  model: "gemini-2.5-flash",
   systemPrompt: "",
   userPrompt: "",
   response: null,
@@ -132,7 +132,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   onNodesChange: (changes) => {
     set({
-      nodes: applyNodeChanges(changes, get().nodes) as WorkflowNode[],
+      nodes: applyNodeChanges(changes, get().nodes) as any,
     });
   },
 
@@ -183,7 +183,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }
 
     // Create new edge
-    const newEdge = {
+    const newEdge: any = {
       ...connection,
       id: `edge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       animated: true,
@@ -363,7 +363,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         position: { x: 450, y: 200 },
         data: {
           label: "Analyze Product",
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash",
           systemPrompt:
             "You are a product analyst. Analyze the product image and specifications provided.",
           userPrompt:
@@ -381,7 +381,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         position: { x: 900, y: 50 },
         data: {
           label: "Write Instagram Caption",
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash",
           systemPrompt: "Write Instagram caption for the described product.",
           userPrompt:
             "Create an engaging Instagram caption for this product with relevant hashtags.",
@@ -397,7 +397,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         position: { x: 900, y: 320 },
         data: {
           label: "Write SEO Meta Description",
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash",
           systemPrompt: "Write SEO meta description for the described product.",
           userPrompt:
             "Write an SEO-optimized meta description (under 160 characters) for this product.",
@@ -413,7 +413,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         position: { x: 900, y: 590 },
         data: {
           label: "Write Amazon Listing",
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash",
           systemPrompt: "Write Amazon listing for the following described product.",
           userPrompt:
             "Based on the product analysis, write a compelling Amazon product listing with title, bullet points, and description.",

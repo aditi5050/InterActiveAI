@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     // The frontend now sends "gemini-..." models due to my edit in LLMNode.tsx
 
     const response = await generateContent({
-        model: model || "gemini-1.5-flash",
+        model: model || "gemini-2.5-flash",
         prompt: userPrompt,
         systemInstruction: systemPrompt,
         images: images || [],

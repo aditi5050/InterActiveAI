@@ -30,14 +30,14 @@ export default function NodeInspector({
               </label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                value={node.data?.model || "gemini-1.5-flash"}
+                value={node.data?.model || "gemini-2.5-flash"}
                 onChange={(e) =>
                   onUpdate(node.id, { model: e.target.value })
                 }
               >
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2-flash">Gemini 2 Flash</option>
               </select>
             </div>
           </div>

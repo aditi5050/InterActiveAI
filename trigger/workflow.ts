@@ -245,7 +245,7 @@ export const workflowRunJob = task({
                     const user = nodeInputs.user_message;
                     const images = nodeInputs.images || [];
                     const model =
-                      (node.config as any)?.model || "gemini-1.5-flash";
+                      (node.config as any)?.model || "gemini-2.5-flash";
 
                     let fullPrompt = "";
                     if (system) fullPrompt += `System: ${system}\n\n`;

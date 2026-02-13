@@ -52,7 +52,7 @@ export async function generateContent({ model: modelName, prompt, systemInstruct
 
 export async function generateText(
   prompt: string,
-  modelName: string = "gemini-1.5-flash"
+  modelName: string = "gemini-2.5-flash"
 ) {
   try {
     if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
@@ -70,7 +70,7 @@ export async function generateText(
 export async function generateVision(
   prompt: string,
   imageUrls: string | string[],
-  modelName: string = "gemini-1.5-flash"
+  modelName: string = "gemini-2.5-flash"
 ) {
   try {
     if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");

@@ -10,9 +10,9 @@ import {
 } from "@/hooks/useNodeStatus";
 
 const MODELS = [
-  { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
-  { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
-  { value: "gemini-1.0-pro", label: "Gemini 1.0 Pro" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { value: "gemini-2-flash", label: "Gemini 2 Flash" },
 ];
 
 export function LLMNode({ id, data, selected }: NodeProps) {
@@ -61,11 +61,11 @@ export function LLMNode({ id, data, selected }: NodeProps) {
         if (sourceNode) {
           // Get text from connected Text node
           if (sourceNode.type === 'text' && sourceNode.data?.text) {
-            userPromptFromInput = sourceNode.data.text;
+            userPromptFromInput = String(sourceNode.data.text);
           }
           // Get response from connected LLM node
           if (sourceNode.type === 'llm' && sourceNode.data?.output) {
-            userPromptFromInput = sourceNode.data.output;
+            userPromptFromInput = String(sourceNode.data.output);
           }
         }
       }
@@ -96,7 +96,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: data.model || 'gemini-1.5-flash',
+          model: data.model || 'gemini-2.5-flash',
           userPrompt: finalPrompt,
           systemPrompt: data.systemPrompt || undefined,
           images: data.images || [],
@@ -161,7 +161,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
             <select
               className="w-full px-2 py-1 text-sm border border-gray-300 rounded appearance-none focus:outline-none focus:ring-2 focus:ring-[#6F42C1] bg-white text-black"
               style={{ color: '#000000' }}
-              value={data.model || "gemini-1.5-flash"}
+              value={data.model || "gemini-2.5-flash"}
               onChange={onModelChange}
               disabled={data.isLoading}
             >
