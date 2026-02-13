@@ -1,6 +1,6 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
-import { Cpu, ChevronDown, Loader2, Copy, Trash2 } from "lucide-react";
+import { Cpu, ChevronDown, Loader2, Copy, Trash2, ArrowRight } from "lucide-react";
 import { useWorkflowStore } from '@/stores/workflowStore';
 import {
   useNodeStatus,
@@ -48,12 +48,88 @@ export function LLMNode({ id, data, selected }: NodeProps) {
     }
   }, [data.output]);
 
+  // Collect inputs from connected nodes
+  const collectInputs = useCallback(async () => {
+    const { nodes, edges } = useWorkflowStore.getState();
+    let userPromptFromInput = '';
+
+    // Find edges connected to this node
+    for (const edge of edges) {
+      if (edge.target === id && edge.targetHandle === 'user') {
+        // Get source node
+        const sourceNode = nodes.find(n => n.id === edge.source);
+        if (sourceNode) {
+          // Get text from connected Text node
+          if (sourceNode.type === 'text' && sourceNode.data?.text) {
+            userPromptFromInput = sourceNode.data.text;
+          }
+          // Get response from connected LLM node
+          if (sourceNode.type === 'llm' && sourceNode.data?.output) {
+            userPromptFromInput = sourceNode.data.output;
+          }
+        }
+      }
+    }
+
+    return { userPrompt: userPromptFromInput };
+  }, [id]);
+
+  const handleRun = useCallback(async () => {
+    updateNodeData(id, { isLoading: true, error: null, output: null });
+
+    try {
+      const { userPrompt } = await collectInputs();
+      
+      // Use connected prompt input first, then the prompt field
+      const finalPrompt = userPrompt || data.prompt || '';
+
+      if (!finalPrompt) {
+        updateNodeData(id, {
+          error: 'Please connect a input or enter a prompt',
+          isLoading: false,
+        });
+        return;
+      }
+
+      // Call Gemini API
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: data.model || 'gemini-1.5-flash',
+          userPrompt: finalPrompt,
+          systemPrompt: data.systemPrompt || undefined,
+          images: data.images || [],
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.content) {
+        updateNodeData(id, {
+          output: result.content,
+          isLoading: false,
+        });
+      } else {
+        updateNodeData(id, {
+          error: result.error || 'Failed to get response',
+          isLoading: false,
+        });
+      }
+    } catch (error) {
+      updateNodeData(id, {
+        error: error instanceof Error ? error.message : 'An error occurred',
+        isLoading: false,
+      });
+    }
+  }, [id, data, updateNodeData, collectInputs]);
+
   return (
     <div
-      className={`relative bg-[#1A1A23] rounded-lg shadow-lg border w-80 transition-all duration-200 ${
+      className={`relative bg-[#1A1A23] rounded-lg shadow-lg border w-96 transition-all duration-200 ${
         selected ? "border-[#6F42C1] ring-2 ring-[#6F42C1]/20" : "border-[#2A2A2F]"
       } ${
-        isRunning
+        (data.isLoading || isRunning)
           ? "ring-4 ring-[#6F42C1]/50 border-[#6F42C1] animate-pulse shadow-lg shadow-[#6F42C1]/20"
           : ""
       }`}
@@ -62,7 +138,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
         <div className="flex items-center">
           <Cpu className="w-4 h-4 mr-2 text-[#6F42C1]" />
           <span className="text-sm font-medium text-white">LLM Model</span>
-          {isRunning && (
+          {data.isLoading && (
             <Loader2 className="ml-2 w-3 h-3 animate-spin text-[#6F42C1]" />
           )}
         </div>
@@ -87,7 +163,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
               style={{ color: '#000000' }}
               value={data.model || "gemini-1.5-flash"}
               onChange={onModelChange}
-              disabled={isRunning}
+              disabled={data.isLoading}
             >
               {MODELS.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -110,7 +186,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
             style={{ color: '#000000' }}
             value={data.prompt || ''}
             onChange={onPromptChange}
-            disabled={isRunning}
+            disabled={data.isLoading}
           />
         </div>
 
@@ -128,37 +204,37 @@ export function LLMNode({ id, data, selected }: NodeProps) {
           </div>
         </div>
 
-        {/* Output Display - Expandable */}
-        {output && (
+        {/* Output Display */}
+        {(data.output || data.isLoading || data.error) && (
           <div className="mt-3 pt-3 border-t border-[#2A2A2F]">
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-medium text-gray-300">
                 Output
               </label>
-              <button
-                onClick={copyOutput}
-                className="p-1 hover:bg-[#2A2A2F] rounded text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                <Copy className="w-3 h-3" />
-              </button>
+              {data.output && (
+                <button
+                  onClick={copyOutput}
+                  className="p-1 hover:bg-[#2A2A2F] rounded text-gray-500 hover:text-gray-300 transition-colors"
+                  title="Copy output"
+                >
+                  <Copy className="w-3 h-3" />
+                </button>
+              )}
             </div>
-            <div className="bg-[#0E0E13] p-2 rounded text-xs text-gray-300 whitespace-pre-wrap max-h-40 overflow-y-auto border border-[#2A2A2F]">
-              {typeof output === 'object' ? (output as any).text || JSON.stringify(output, null, 2) : output}
-            </div>
-            {duration && (
-              <div className="mt-1 text-xs text-gray-400">
-                Execution time: {(duration / 1000).toFixed(2)}s
+            {data.isLoading ? (
+              <div className="flex items-center justify-center gap-2 min-h-[60px] text-gray-400">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-xs">Generating response...</span>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Error Display */}
-        {error && (
-          <div className="mt-3 pt-3 border-t border-[#2A2A2F]">
-            <div className="bg-red-900/20 p-2 rounded text-xs text-red-400 border border-red-800/50">
-              Error: {error}
-            </div>
+            ) : data.error ? (
+              <div className="bg-red-900/20 p-3 rounded text-xs text-red-400 border border-red-800/50">
+                {data.error}
+              </div>
+            ) : data.output ? (
+              <div className="bg-[#0E0E13] p-3 rounded text-xs text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto border border-[#2A2A2F]">
+                {typeof data.output === 'string' ? data.output : JSON.stringify(data.output, null, 2)}
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -180,6 +256,19 @@ export function LLMNode({ id, data, selected }: NodeProps) {
             </span>
           </div>
         )}
+
+        {/* Run Button */}
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#2A2A2F]">
+          <button
+            onClick={handleRun}
+            disabled={data.isLoading}
+            className="flex items-center gap-2 px-3 py-2 bg-[#6F42C1] hover:bg-[#7D52D0] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded-lg transition-all"
+            title="Run model with current prompt"
+          >
+            <ArrowRight className="w-3 h-3" />
+            <span>Run Model</span>
+          </button>
+        </div>
       </div>
 
       {/* Input Handles */}
