@@ -13,10 +13,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const workflow = await prisma.workflow.findUnique({
       where: { id: params.id },
-      include: {
-        nodes: true,
-        edges: true
-      }
     });
 
     if (!workflow) {
@@ -27,7 +23,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       return new NextResponse("Forbidden", { status: 403 });
     }
 
-    return NextResponse.json(workflow);
+    // Map definition -> nodes/edges for frontend compatibility
+    // The DB stores { nodes: [], edges: [] } in 'definition' field
+    const def = workflow.definition as any || { nodes: [], edges: [] };
+    
+    return NextResponse.json({
+      ...workflow,
+      nodes: def.nodes || [],
+      edges: def.edges || [],
+    });
   } catch (error) {
     console.error("[WORKFLOW_GET]", error);
     return new NextResponse("Internal Error", { status: 500 });
@@ -73,7 +77,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     const body = await req.json();
-    const { name, description } = body;
+    const { name, nodes, edges } = body;
 
     const workflow = await prisma.workflow.findUnique({
       where: { id: params.id }
@@ -87,17 +91,20 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       return new NextResponse("Forbidden", { status: 403 });
     }
 
-    const updated = await prisma.workflow.update({
+    const updatedWorkflow = await prisma.workflow.update({
       where: { id: params.id },
       data: {
-        ...(name && { name }),
-        ...(description !== undefined && { description })
+        name,
+        definition: {
+            nodes: nodes || [],
+            edges: edges || []
+        },
       }
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(updatedWorkflow);
   } catch (error) {
-    console.error("[WORKFLOW_UPDATE]", error);
+    console.error("[WORKFLOW_PUT]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
 }

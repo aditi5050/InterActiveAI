@@ -59,16 +59,26 @@ export async function POST(req: Request) {
       },
     });
 
+    // Use definition field to store nodes/edges as the DB schema cannot be updated currently
+    const nodes = body.nodes || [];
+    const edges = body.edges || [];
+    const definitionData = { nodes, edges };
+
     const workflow = await prisma.workflow.create({
       data: {
         userId: userId,
         name: name || "Untitled Workflow",
         description: description,
-        definition: definition || { nodes: [], edges: [] },
+        definition: definitionData, // Store in definition field
+        // nodesData/edgesData removed
       },
     });
 
-    return NextResponse.json(workflow);
+    return NextResponse.json({
+        ...workflow,
+        nodes: nodes,
+        edges: edges,
+    });
   } catch (error) {
     console.error("Failed to create workflow:", error);
     return new NextResponse("Internal Error", { status: 500 });

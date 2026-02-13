@@ -1,6 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-tertiary: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #888888;
+  --border-color: #2a2a2a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 /* @import removed, loaded in layout.tsx */
 
 * {
+  box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -o-font-smoothing: antialiased;
@@ -8,7 +29,104 @@
 
 html,
 body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  width: 100%;
   overscroll-behavior-y: none;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* React Flow Customizations */
+.react-flow__node {
+  cursor: default;
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #666;
+  border: 2px solid #888;
+}
+
+.react-flow__handle:hover {
+  background: #888;
+  transform: scale(1.2);
+}
+
+.react-flow__edge-path {
+  stroke: #444;
+  stroke-width: 2;
+}
+
+.react-flow__edge.animated path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 10;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__connection-line {
+  stroke: #666;
+  stroke-width: 2;
+}
+
+/* Minimap styles */
+.react-flow__minimap {
+  background: #111 !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 4px !important;
+}
+
+/* Controls styles */
+.react-flow__controls {
+  background: #111 !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 4px !important;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom: 1px solid #2a2a2a !important;
+  fill: #888 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #222 !important;
+  fill: #fff !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }
 
 html.lenis {

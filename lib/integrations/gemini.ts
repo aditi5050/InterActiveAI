@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
@@ -7,6 +7,48 @@ if (!apiKey) {
 }
 
 const genAI = new GoogleGenerativeAI(apiKey || "mock_key");
+
+export interface GenerateContentOptions {
+    model: string;
+    prompt: string;
+    systemInstruction?: string;
+    images?: string[]; // base64 strings
+}
+
+export async function generateContent({ model: modelName, prompt, systemInstruction, images = [] }: GenerateContentOptions) {
+    try {
+        if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+
+        const model = genAI.getGenerativeModel({ 
+            model: modelName,
+            systemInstruction: systemInstruction ? { role: "system", parts: [{ text: systemInstruction }] } : undefined
+        });
+
+        const parts: Part[] = [{ text: prompt }];
+
+        // Add images if present
+        for (const imageBase64 of images) {
+            // Remove data:image/...;base64, prefix if present
+            const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+            parts.push({
+                inlineData: {
+                    data: base64Data,
+                    mimeType: "image/jpeg", // Defaulting to jpeg, ideally detect from header
+                }
+            });
+        }
+
+        const result = await model.generateContent(parts);
+        const response = await result.response;
+        
+        return {
+            text: response.text(),
+        };
+    } catch (error) {
+        console.error("[GEMINI_CONTENT_ERROR]", error);
+        throw error;
+    }
+}
 
 export async function generateText(
   prompt: string,
