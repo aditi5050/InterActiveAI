@@ -1,24 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-// Manually construct client with URL if it exists, otherwise standard initialization
-// which might pick up standard ENV if not using the new config file approach.
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
-
- 
+const prisma = new PrismaClient();
 
 async function main() {
+
   const userId = 'user_demo_123';
-  
+
   const dummyUser = await prisma.user.upsert({
     where: { email: 'demo@weavy.ai' },
     update: {},
@@ -36,11 +24,10 @@ async function main() {
       name: 'Product Marketing Kit Generator',
       description: 'Generate marketing assets from product images and video.',
       userId: dummyUser.id,
-      definition: {}, // Placeholder for UI JSON
+      definition: {},
     },
   });
 
-  // Nodes
   // Branch A
   const uploadImageNode = await prisma.workflowNode.create({
     data: {
@@ -133,18 +120,33 @@ async function main() {
   });
 
   // Edges
-  // Branch A
-  await prisma.workflowEdge.create({ data: { workflowId: workflow.id, sourceId: uploadImageNode.id, targetId: cropImageNode.id } });
-  await prisma.workflowEdge.create({ data: { workflowId: workflow.id, sourceId: cropImageNode.id, targetId: llmNode1.id } }); // Image input to LLM
-  await prisma.workflowEdge.create({ data: { workflowId: workflow.id, sourceId: systemPromptNode.id, targetId: llmNode1.id } });
-  await prisma.workflowEdge.create({ data: { workflowId: workflow.id, sourceId: productDetailsNode.id, targetId: llmNode1.id } });
+  await prisma.workflowEdge.create({
+    data: { workflowId: workflow.id, sourceId: uploadImageNode.id, targetId: cropImageNode.id }
+  });
 
-  // Branch B
-  await prisma.workflowEdge.create({ data: { workflowId: workflow.id, sourceId: uploadVideoNode.id, targetId: extractFrameNode.id } });
+  await prisma.workflowEdge.create({
+    data: { workflowId: workflow.id, sourceId: cropImageNode.id, targetId: llmNode1.id }
+  });
 
-  // Convergence
-  await prisma.workflowEdge.create({ data: { workflowId: workflow.id, sourceId: llmNode1.id, targetId: llmNode2.id } }); // Text output to LLM 2
-  await prisma.workflowEdge.create({ data: { workflowId: workflow.id, sourceId: extractFrameNode.id, targetId: llmNode2.id } }); // Image frame to LLM 2
+  await prisma.workflowEdge.create({
+    data: { workflowId: workflow.id, sourceId: systemPromptNode.id, targetId: llmNode1.id }
+  });
+
+  await prisma.workflowEdge.create({
+    data: { workflowId: workflow.id, sourceId: productDetailsNode.id, targetId: llmNode1.id }
+  });
+
+  await prisma.workflowEdge.create({
+    data: { workflowId: workflow.id, sourceId: uploadVideoNode.id, targetId: extractFrameNode.id }
+  });
+
+  await prisma.workflowEdge.create({
+    data: { workflowId: workflow.id, sourceId: llmNode1.id, targetId: llmNode2.id }
+  });
+
+  await prisma.workflowEdge.create({
+    data: { workflowId: workflow.id, sourceId: extractFrameNode.id, targetId: llmNode2.id }
+  });
 
   console.log('Seeding completed.');
 }

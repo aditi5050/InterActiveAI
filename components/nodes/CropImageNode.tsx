@@ -4,10 +4,9 @@ import { Crop, Trash2 } from 'lucide-react';
 import { useWorkflowStore } from '@/stores/workflowStore';
 
 export function CropImageNode({ id, data, selected }: NodeProps) {
+
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const deleteNode = useWorkflowStore((state) => state.deleteNode);
-
-  if (!data) return null;
 
   const onParamChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
     updateNodeData(id, { [evt.target.name]: parseInt(evt.target.value) || 0 });
@@ -17,6 +16,8 @@ export function CropImageNode({ id, data, selected }: NodeProps) {
     deleteNode(id);
   }, [id, deleteNode]);
 
+  if (!data) return null;
+
   return (
     <div className={`relative bg-[#1A1A23] rounded-lg shadow-lg border w-64 ${selected ? 'border-[#6F42C1] ring-2 ring-[#6F42C1]/20' : 'border-[#2A2A2F]'}`}>
       <div className="flex items-center justify-between px-3 py-2 border-b bg-[#FBBF24]/10 rounded-t-lg border-[#2A2A2F]">
@@ -24,56 +25,17 @@ export function CropImageNode({ id, data, selected }: NodeProps) {
           <Crop className="w-4 h-4 mr-2 text-[#FBBF24]" />
           <span className="text-sm font-medium text-white">Crop Image</span>
         </div>
-        <button
-          onClick={onDelete}
-          className="p-1 hover:bg-red-900/30 rounded text-gray-600 hover:text-red-600 transition-colors"
-          title="Delete node"
-        >
+        <button onClick={onDelete}>
           <Trash2 className="w-3 h-3" />
         </button>
       </div>
-      
-      <div className="p-3 space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-medium text-white">X (%)</label>
-            <input type="number" name="x_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data?.x_percent ?? 0} onChange={onParamChange} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-white">Y (%)</label>
-            <input type="number" name="y_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data?.y_percent ?? 0} onChange={onParamChange} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-white">Width (%)</label>
-            <input type="number" name="width_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data?.width_percent ?? 100} onChange={onParamChange} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-white">Height (%)</label>
-            <input type="number" name="height_percent" className="w-full text-xs border border-gray-300 rounded p-1 bg-white text-black placeholder-gray-400" style={{ color: '#000000' }} value={data?.height_percent ?? 100} onChange={onParamChange} />
-          </div>
-        </div>
 
-        {data?.imageUrl && (
-          <div className="mt-2 text-xs text-gray-400 truncate">
-            Input: ...{data.imageUrl.slice(-20)}
-          </div>
-        )}
+      <div className="p-3 space-y-2">
+        <input name="x_percent" value={data?.x_percent ?? 0} onChange={onParamChange} />
       </div>
 
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="image_url"
-        className="w-3 h-3 bg-green-500 border-2 border-green-500"
-      />
-      <div className="absolute left-[-50px] top-[40px] text-[10px] text-gray-400 w-[40px] text-right pointer-events-none">Image</div>
-
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        className="w-3 h-3 bg-green-500 border-2 border-green-500"
-      />
+      <Handle type="target" position={Position.Left} id="image_url" />
+      <Handle type="source" position={Position.Right} id="output" />
     </div>
   );
 }
