@@ -4,11 +4,12 @@ import React, { useCallback, useRef } from 'react';
 import { ReactFlowProvider, useReactFlow } from 'reactflow';
 import Sidebar from '@/components/Workflow/Sidebar';
 import Canvas from '@/components/Workflow/Canvas';
+import HistoryPanel from '@/components/HistoryPanel';
 import { useWorkflowStore } from '@/stores/workflowStore';
 
 function WorkflowBuilderInner() {
     const canvasWrapper = useRef<HTMLDivElement>(null);
-    const { addNode } = useWorkflowStore();
+    const { addNode, workflowId } = useWorkflowStore();
     const { screenToFlowPosition } = useReactFlow();
 
     const onDragStart = useCallback((event: React.DragEvent, nodeType: 'text' | 'image' | 'llm' | 'crop' | 'extract' | 'video') => {
@@ -41,17 +42,20 @@ function WorkflowBuilderInner() {
     );
 
     return (
-        <div className="relative h-screen w-screen overflow-hidden bg-[#0a0a0a]">
-            {/* Canvas - takes full screen */}
-            <div ref={canvasWrapper} className="absolute inset-0">
+        <div className="relative h-screen w-screen overflow-hidden bg-[#0a0a0a] flex">
+            {/* Sidebar - left side */}
+            <div className="h-full z-50 flex-shrink-0">
+                <Sidebar onDragStart={onDragStart} />
+            </div>
+
+            {/* Canvas - center, takes remaining space */}
+            <div ref={canvasWrapper} className="flex-1 h-full">
                 <Canvas onDragOver={onDragOver} onDrop={onDrop} />
             </div>
 
-            {/* Sidebar - overlays on top of canvas */}
-            <div className="absolute left-0 top-0 h-full z-50 pointer-events-none">
-                <div className="pointer-events-auto h-full">
-                    <Sidebar onDragStart={onDragStart} />
-                </div>
+            {/* History Panel - right side */}
+            <div className="h-full z-50 flex-shrink-0">
+                <HistoryPanel workflowId={workflowId} />
             </div>
         </div>
     );

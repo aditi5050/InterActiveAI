@@ -5,8 +5,6 @@ import { Crop, Trash2, Loader2, ArrowRight } from 'lucide-react';
 export function CropImageNode({ id, data, selected }: NodeProps) {
   const { getNodes, getEdges, setNodes } = useReactFlow();
 
-  if (!data) return null;
-
   // Helper to update this node's data in React Flow
   const updateData = useCallback((newData: Record<string, any>) => {
     setNodes((nodes) => 
@@ -58,7 +56,7 @@ export function CropImageNode({ id, data, selected }: NodeProps) {
   }, [id, getNodes, getEdges]);
 
   // Crop image using canvas based on percentage values
-  const cropImageWithCanvas = (imageSrc: string, xPercent: number, yPercent: number, widthPercent: number, heightPercent: number): Promise<string> => {
+  const cropImageWithCanvas = useCallback((imageSrc: string, xPercent: number, yPercent: number, widthPercent: number, heightPercent: number): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -102,9 +100,10 @@ export function CropImageNode({ id, data, selected }: NodeProps) {
       
       img.src = imageSrc;
     });
-  };
+  }, []);
 
   const handleRun = useCallback(async () => {
+    if (!data) return;
     updateData({ isLoading: true, error: null, croppedImageUrl: null });
 
     try {
@@ -159,7 +158,9 @@ export function CropImageNode({ id, data, selected }: NodeProps) {
         isLoading: false,
       });
     }
-  }, [data, updateData, getInputImage]);
+  }, [data, updateData, getInputImage, cropImageWithCanvas]);
+
+  if (!data) return null;
 
   return (
     <div className={`relative bg-[#1A1A23] rounded-lg shadow-lg border w-64 ${selected ? 'border-[#6F42C1] ring-2 ring-[#6F42C1]/20' : 'border-[#2A2A2F]'} ${data.isLoading ? 'ring-4 ring-[#FBBF24]/50 border-[#FBBF24] animate-pulse' : ''}`}>

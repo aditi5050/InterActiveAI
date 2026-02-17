@@ -20,7 +20,20 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       },
       take: 20, // Limit to recent runs
       include: {
-        nodeExecutions: true,
+        nodeExecutions: {
+          include: {
+            node: {
+              select: {
+                id: true,
+                label: true,
+                type: true,
+              },
+            },
+          },
+          orderBy: {
+            startedAt: 'asc',
+          },
+        },
       },
     });
 

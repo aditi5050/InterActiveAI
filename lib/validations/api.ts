@@ -23,13 +23,13 @@ export const startRunSchema = z.object({
 
 export const startSingleNodeRunSchema = z.object({
   workflowId: z.string().uuid("Invalid workflow ID"),
-  nodeId: z.string().uuid("Invalid node ID"),
+  nodeId: z.string().min(1, "Invalid node ID"),
   inputs: z.record(z.any()).optional().default({}),
 });
 
 export const startSelectedNodesRunSchema = z.object({
   workflowId: z.string().uuid("Invalid workflow ID"),
-  selectedNodeIds: z.array(z.string().uuid()),
+  selectedNodeIds: z.array(z.string().min(1)),
   inputs: z.record(z.any()).optional().default({}),
 });
 

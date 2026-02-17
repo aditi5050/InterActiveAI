@@ -6,8 +6,6 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
   const { getNodes, getEdges, setNodes } = useReactFlow();
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  if (!data) return null;
-
   // Helper to update this node's data in React Flow
   const updateData = useCallback((newData: Record<string, any>) => {
     setNodes((nodes) => 
@@ -53,7 +51,7 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
   }, [id, getNodes, getEdges]);
 
   // Extract frame from video at specified timestamp
-  const extractFrameFromVideo = (videoUrl: string, timestampInput: string): Promise<string> => {
+  const extractFrameFromVideo = useCallback((videoUrl: string, timestampInput: string): Promise<string> => {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
       video.crossOrigin = 'anonymous';
@@ -101,9 +99,10 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
       
       video.src = videoUrl;
     });
-  };
+  }, []);
 
   const handleExtract = useCallback(async () => {
+    if (!data) return;
     updateData({ isLoading: true, error: null, extractedFrameUrl: null });
 
     try {
@@ -132,7 +131,9 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
         isLoading: false,
       });
     }
-  }, [data, updateData, getInputVideo]);
+  }, [data, updateData, getInputVideo, extractFrameFromVideo]);
+
+  if (!data) return null;
 
   return (
     <div className={`relative bg-[#1A1A23] rounded-lg shadow-lg border w-64 ${selected ? 'border-[#6F42C1] ring-2 ring-[#6F42C1]/20' : 'border-[#2A2A2F]'} ${data.isLoading ? 'ring-4 ring-[#6366F1]/50 border-[#6366F1] animate-pulse' : ''}`}>

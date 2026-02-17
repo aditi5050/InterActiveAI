@@ -240,9 +240,10 @@ export const workflowRunJob = task({
 
                 // Execute node based on type
                 switch (node.type) {
-                  case "llmNode": {
-                    const system = nodeInputs.system_prompt;
-                    const user = nodeInputs.user_message;
+                  case "llm": {
+                    // Support both camelCase (from node data) and snake_case (from edges)
+                    const system = nodeInputs.systemPrompt || nodeInputs.system_prompt;
+                    const user = nodeInputs.userPrompt || nodeInputs.user_message || nodeInputs.prompt;
                     const images = nodeInputs.images || [];
                     const model =
                       (node.config as any)?.model || "gemini-2.5-flash";
@@ -250,8 +251,6 @@ export const workflowRunJob = task({
                     let fullPrompt = "";
                     if (system) fullPrompt += `System: ${system}\n\n`;
                     if (user) fullPrompt += `User: ${user}`;
-                    if (!fullPrompt && nodeInputs.prompt)
-                      fullPrompt = nodeInputs.prompt;
                     if (!fullPrompt) fullPrompt = "Explain this.";
 
                     if (images && images.length > 0) {
@@ -277,7 +276,7 @@ export const workflowRunJob = task({
                     break;
                   }
 
-                  case "cropImageNode": {
+                  case "crop": {
                     const cropUrl =
                       nodeInputs.image_url ||
                       nodeInputs.url ||
@@ -300,7 +299,7 @@ export const workflowRunJob = task({
                     break;
                   }
 
-                  case "extractFrameNode": {
+                  case "extract": {
                     const videoUrl =
                       nodeInputs.video_url ||
                       nodeInputs.url ||
@@ -327,9 +326,9 @@ export const workflowRunJob = task({
                     break;
                   }
 
-                  case "uploadImageNode":
-                  case "uploadVideoNode":
-                  case "textNode": {
+                  case "image":
+                  case "video":
+                  case "text": {
                     const text = (node.config as any)?.text;
                     output = { output: text, text };
                     break;

@@ -40,7 +40,17 @@ export async function GET(
         const initialRun = await prisma.workflowRun.findUnique({
           where: { id: runId },
           include: {
-            nodeExecutions: true,
+            nodeExecutions: {
+              include: {
+                node: {
+                  select: {
+                    id: true,
+                    label: true,
+                    type: true,
+                  },
+                },
+              },
+            },
           },
         });
 
@@ -64,7 +74,17 @@ export async function GET(
             const updatedRun = await prisma.workflowRun.findUnique({
               where: { id: runId },
               include: {
-                nodeExecutions: true,
+                nodeExecutions: {
+                  include: {
+                    node: {
+                      select: {
+                        id: true,
+                        label: true,
+                        type: true,
+                      },
+                    },
+                  },
+                },
               },
             });
 
@@ -89,12 +109,13 @@ export async function GET(
                 const wasModified = exec.completedAt && exec.completedAt > lastFetchedAt;
                 return wasModified || (exec.status !== "PENDING" && !exec.completedAt);
               })
-              .map((exec) => ({
+              .map((exec: any) => ({
                 nodeId: exec.nodeId,
                 status: exec.status,
                 output: exec.outputs,
                 error: exec.error,
                 duration: exec.duration,
+                node: exec.node,
               }));
 
             if (updates.length > 0) {

@@ -4,15 +4,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Manually construct client with URL if it exists, otherwise standard initialization
-// which might pick up standard ENV if not using the new config file approach.
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
+// Standard initialization - Prisma will pick up DATABASE_URL from environment
+const prisma = new PrismaClient();
 
  
 

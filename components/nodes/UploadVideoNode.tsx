@@ -10,8 +10,6 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
   const [duration, setDuration] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  if (!data) return null;
-
   // Helper to update this node's data in React Flow
   const updateData = useCallback((newData: Record<string, any>) => {
     setNodes((nodes) => 
@@ -105,6 +103,8 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  if (!data) return null;
 
   return (
     <div className={`relative bg-[#1A1A23] rounded-lg shadow-lg border w-72 ${selected ? 'border-[#6F42C1] ring-2 ring-[#6F42C1]/20' : 'border-[#2A2A2F]'}`}>

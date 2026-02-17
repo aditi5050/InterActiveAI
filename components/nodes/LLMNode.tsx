@@ -7,6 +7,8 @@ import {
   useNodeError,
   useNodeDuration,
 } from "@/hooks/useNodeStatus";
+import { useWorkflowStore } from "@/stores/workflowStore";
+import { useWorkflowRuntimeStore } from "@/stores/workflowRuntimeStore";
 
 const MODELS = [
   { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
@@ -16,6 +18,8 @@ const MODELS = [
 
 export function LLMNode({ id, data, selected }: NodeProps) {
   const { getNodes, getEdges, setNodes } = useReactFlow();
+  const workflowId = useWorkflowStore((state) => state.workflowId);
+  const startSingleNodeRun = useWorkflowRuntimeStore((state) => state.startSingleNodeRun);
   const status = useNodeStatus(id);
   const output = useNodeOutput(id);
   const error = useNodeError(id);
@@ -121,7 +125,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
     try {
       const { userPrompt, images, metadata } = await collectInputs();
       
-      // Use connected prompt input first, then the prompt field (data.prompt not data.userPrompt)
+      // Use connected prompt input first, then the prompt field
       const finalPrompt = userPrompt || data.prompt || '';
 
       if (!finalPrompt) {
@@ -132,7 +136,24 @@ export function LLMNode({ id, data, selected }: NodeProps) {
         return;
       }
 
-      // Call Gemini API with collected inputs
+      // Try to run via workflow system (creates history) if workflow is saved
+      if (workflowId && workflowId !== 'workflow_default') {
+        try {
+          await startSingleNodeRun(workflowId, id, {
+            prompt: finalPrompt,
+            systemPrompt: data.systemPrompt,
+            model: data.model,
+          });
+          // The runtime store will update node status/output via SSE
+          updateData({ isLoading: false });
+          return;
+        } catch (err) {
+          // Workflow not saved or node not in DB, fall back to direct API
+          console.log('[LLMNode] Falling back to direct API call:', err);
+        }
+      }
+
+      // Direct API call (no history, but works without saving)
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,7 +185,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
         isLoading: false,
       });
     }
-  }, [data, updateData, collectInputs]);
+  }, [workflowId, id, data.prompt, data.systemPrompt, data.model, startSingleNodeRun, updateData, collectInputs]);
 
   return (
     <div
