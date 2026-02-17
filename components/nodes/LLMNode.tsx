@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { Handle, Position, NodeProps, useReactFlow } from "reactflow";
 import { Cpu, ChevronDown, Loader2, Copy, Trash2, ArrowRight } from "lucide-react";
-import { useWorkflowStore } from '@/stores/workflowStore';
 import {
   useNodeStatus,
   useNodeOutput,
@@ -16,31 +15,46 @@ const MODELS = [
 ];
 
 export function LLMNode({ id, data, selected }: NodeProps) {
-  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
-  const deleteNode = useWorkflowStore((state) => state.deleteNode);
+  const { getNodes, getEdges, setNodes } = useReactFlow();
   const status = useNodeStatus(id);
   const output = useNodeOutput(id);
   const error = useNodeError(id);
   const duration = useNodeDuration(id);
   const isRunning = status === "RUNNING";
 
+  // Helper to update this node's data in React Flow
+  const updateData = useCallback((newData: Record<string, any>) => {
+    setNodes((nodes) => 
+      nodes.map((node) => 
+        node.id === id 
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node
+      )
+    );
+  }, [id, setNodes]);
+
+  // Helper to delete this node from React Flow
+  const deleteThisNode = useCallback(() => {
+    setNodes((nodes) => nodes.filter((node) => node.id !== id));
+  }, [id, setNodes]);
+
   const onModelChange = useCallback(
     (evt: React.ChangeEvent<HTMLSelectElement>) => {
-      updateNodeData(id, { model: evt.target.value });
+      updateData({ model: evt.target.value });
     },
-    [id, updateNodeData]
+    [updateData]
   );
 
   const onPromptChange = useCallback(
     (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
-      updateNodeData(id, { prompt: evt.target.value });
+      updateData({ prompt: evt.target.value });
     },
-    [id, updateNodeData]
+    [updateData]
   );
 
   const onDelete = useCallback(() => {
-    deleteNode(id);
-  }, [id, deleteNode]);
+    deleteThisNode();
+  }, [deleteThisNode]);
 
   const copyOutput = useCallback(() => {
     if (data.output) {
@@ -50,7 +64,8 @@ export function LLMNode({ id, data, selected }: NodeProps) {
 
   // Collect inputs from all connected nodes
   const collectInputs = useCallback(async () => {
-    const { nodes, edges } = useWorkflowStore.getState();
+    const nodes = getNodes();
+    const edges = getEdges();
     let userPromptFromInput = '';
     const collectedImages: string[] = [];
     const collectedMetadata: any = {};
@@ -98,10 +113,10 @@ export function LLMNode({ id, data, selected }: NodeProps) {
       images: collectedImages,
       metadata: collectedMetadata 
     };
-  }, [id]);
+  }, [id, getNodes, getEdges]);
 
   const handleRun = useCallback(async () => {
-    updateNodeData(id, { isLoading: true, error: null, output: null });
+    updateData({ isLoading: true, error: null, output: null });
 
     try {
       const { userPrompt, images, metadata } = await collectInputs();
@@ -110,7 +125,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
       const finalPrompt = userPrompt || data.prompt || '';
 
       if (!finalPrompt) {
-        updateNodeData(id, {
+        updateData({
           error: 'Please enter a prompt or connect a text node',
           isLoading: false,
         });
@@ -133,23 +148,23 @@ export function LLMNode({ id, data, selected }: NodeProps) {
       const result = await response.json();
 
       if (result.success && result.content) {
-        updateNodeData(id, {
+        updateData({
           output: result.content,
           isLoading: false,
         });
       } else {
-        updateNodeData(id, {
+        updateData({
           error: result.error || 'Failed to get response',
           isLoading: false,
         });
       }
     } catch (error) {
-      updateNodeData(id, {
+      updateData({
         error: error instanceof Error ? error.message : 'An error occurred',
         isLoading: false,
       });
     }
-  }, [id, data, updateNodeData, collectInputs]);
+  }, [data, updateData, collectInputs]);
 
   return (
     <div
