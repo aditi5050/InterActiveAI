@@ -16,7 +16,12 @@
   - 📝 **Text Input** - Enter prompts and descriptions
 
   - 🖼️ **Image Input** - Upload images for analysis
-  - 🤖 **LLM Node** - Connect to Gemini models for processing
+  - 🤖 **LLM Node** - Connect to Gemini models for processing, accepts system prompt, user message, and images (supports multiple) as inputs
+  - 🖼️ **Upload Video Node** - File upload via Transloadit
+  - 🖼️ **Crop Image Node** - Accepts image input, Configurable crop parameters (x%, y%, width%, height & Executes via FFmpeg on Trigger.dev
+  - 🖼️  **Extract Frame from Video Node** - Accepts video URL input, Configurable timestamp parameter (seconds or percentage) & Extracts a single frame as image
+
+
 - **Real-time Connections** - Connect nodes with animated edges
 - **Workflow Persistence** - Save, load, and manage workflows
 - **Sample Workflows** - Pre-built templates to get started quickly
