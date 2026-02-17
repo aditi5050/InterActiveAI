@@ -1,26 +1,54 @@
 import React, { useCallback, useState } from 'react';
-import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
+import { Handle, Position, NodeProps } from 'reactflow';
 import { Image as ImageIcon, UploadCloud, Trash2 } from 'lucide-react';
+import { useWorkflowStore } from '@/stores/workflowStore';
+
+// Compress image to max 1024px dimension and JPEG quality 0.85
+const compressImage = (dataUrl: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX_DIMENSION = 1024;
+      let width = img.width;
+      let height = img.height;
+      
+      // Only resize if larger than max
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const scale = MAX_DIMENSION / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      } else {
+        resolve(dataUrl); // Return original if canvas fails
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+};
 
 export function UploadImageNode({ id, data, selected }: NodeProps) {
-  const { setNodes } = useReactFlow();
+  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const [uploading, setUploading] = useState(false);
 
-  // Helper to update this node's data in React Flow
+  // Helper to update this node's data using Zustand store
   const updateData = useCallback((newData: Record<string, any>) => {
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
-    );
-  }, [id, setNodes]);
+    updateNodeData(id, newData);
+  }, [id, updateNodeData]);
 
   // Helper to delete this node from React Flow
   const deleteThisNode = useCallback(() => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-  }, [id, setNodes]);
+    deleteNode(id);
+  }, [id, deleteNode]);
 
   const onDelete = useCallback(() => {
     deleteThisNode();
@@ -35,10 +63,13 @@ export function UploadImageNode({ id, data, selected }: NodeProps) {
     formData.append('file', file);
 
     try {
-      // Convert file to base64
+      // Read file as data URL
       const reader = new FileReader();
       reader.onload = async () => {
         const base64String = reader.result as string;
+        
+        // Compress image if too large
+        const compressedBase64 = await compressImage(base64String);
         
         // Upload file
         const response = await fetch('/api/upload', {
@@ -50,7 +81,7 @@ export function UploadImageNode({ id, data, selected }: NodeProps) {
         if (result.url) {
           updateData({ 
             imageUrl: result.url, 
-            imageBase64: base64String,
+            imageBase64: compressedBase64,
             fileName: file.name 
           });
         }

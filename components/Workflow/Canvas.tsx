@@ -34,13 +34,88 @@ const nodeTypes = {
     video: UploadVideoNode,
 };
 
+// Max image dimension to avoid huge base64 strings that exceed Gemini's token limit
+const MAX_IMAGE_DIMENSION = 1024;
+
+// Helper: Extract frame from video at timestamp (client-side)
+const extractFrameFromVideo = (videoUrl: string, timestamp: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        // Only set crossOrigin for http/https URLs, not for data: URLs
+        if (!videoUrl.startsWith('data:')) {
+            video.crossOrigin = 'anonymous';
+        }
+        video.preload = 'auto';
+        video.muted = true; // Mute to allow autoplay policies
+        
+        const timeoutId = setTimeout(() => {
+            reject(new Error('Video load timeout'));
+        }, 30000); // 30 second timeout
+        
+        video.onloadedmetadata = () => {
+            const timestampStr = (timestamp || '0').trim();
+            let targetTime: number;
+            if (timestampStr.endsWith('%')) {
+                const percent = parseFloat(timestampStr.slice(0, -1));
+                targetTime = (percent / 100) * video.duration;
+            } else {
+                targetTime = parseFloat(timestampStr) || 0;
+            }
+            targetTime = Math.max(0, Math.min(targetTime, video.duration || 0));
+            console.log('[extractFrame] Seeking to:', targetTime, 'of', video.duration);
+            video.currentTime = targetTime;
+        };
+        
+        video.onseeked = () => {
+            clearTimeout(timeoutId);
+            try {
+                // Scale down if video is too large
+                let width = video.videoWidth || 640;
+                let height = video.videoHeight || 480;
+                
+                if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+                    const scale = MAX_IMAGE_DIMENSION / Math.max(width, height);
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                    console.log('[extractFrame] Scaling image to:', width, 'x', height);
+                }
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) { 
+                    reject(new Error('Canvas context failed')); 
+                    return; 
+                }
+                ctx.drawImage(video, 0, 0, width, height);
+                // Use JPEG with quality 0.8 instead of PNG to reduce size
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                console.log('[extractFrame] Extracted frame, size:', Math.round(dataUrl.length / 1024), 'KB');
+                resolve(dataUrl);
+            } catch (err) {
+                reject(err);
+            }
+        };
+        
+        video.onerror = (e) => {
+            clearTimeout(timeoutId);
+            console.error('[extractFrame] Video error:', e);
+            reject(new Error('Failed to load video'));
+        };
+        
+        video.src = videoUrl;
+        video.load();
+    });
+};
+
 interface CanvasProps {
     onDragOver: (event: React.DragEvent) => void;
     onDrop: (event: React.DragEvent) => void;
 }
 
 const CanvasInner: React.FC<CanvasProps> = ({ onDragOver, onDrop }) => {
-    const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setEdges, deleteNode, undo, redo, canUndo, canRedo, saveToDatabase, isSaving, isSaved, workflowId } = useWorkflowStore();
+    const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setEdges, deleteNode, undo, redo, canUndo, canRedo, saveToDatabase, isSaving, isSaved, workflowId, updateNodeData } = useWorkflowStore();
     const { startRun, isRunning } = useWorkflowRuntimeStore();
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -54,18 +129,83 @@ const CanvasInner: React.FC<CanvasProps> = ({ onDragOver, onDrop }) => {
 
     // Handle run entire workflow
     const handleRunWorkflow = useCallback(async () => {
-        // Save first if not saved
-        if (!isSaved) {
-            const saved = await saveToDatabase();
-            if (!saved) {
-                alert('Failed to save workflow. Please try again.');
-                return;
+        let currentNodes = useWorkflowStore.getState().nodes;
+        const currentEdges = useWorkflowStore.getState().edges;
+        
+        let needsSave = false;
+        
+        // Pre-process extract frame nodes that don't have extracted frames yet
+        for (const node of currentNodes) {
+            if (node.type === 'extract' && !node.data?.extractedFrameUrl) {
+                // Find connected video node
+                let videoUrl = null;
+                for (const edge of currentEdges) {
+                    if (edge.target === node.id) {
+                        const sourceNode = currentNodes.find((n: any) => n.id === edge.source);
+                        if (sourceNode?.type === 'video' && sourceNode.data?.videoUrl) {
+                            videoUrl = sourceNode.data.videoUrl;
+                            console.log('[Canvas] Found video URL for extract node:', node.id, 'URL length:', videoUrl?.length);
+                            break;
+                        }
+                    }
+                }
+                
+                if (videoUrl) {
+                    try {
+                        console.log('[Canvas] Auto-extracting frame for node:', node.id);
+                        const timestamp = node.data?.timestamp || '0';
+                        const extractedFrameUrl = await extractFrameFromVideo(videoUrl, timestamp);
+                        console.log('[Canvas] Extracted frame successfully, length:', extractedFrameUrl?.length);
+                        updateNodeData(node.id, { extractedFrameUrl, isLoading: false });
+                        needsSave = true;
+                        
+                        // Wait and verify the update
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        const verifyNodes = useWorkflowStore.getState().nodes;
+                        const verifyNode = verifyNodes.find((n: any) => n.id === node.id);
+                        console.log('[Canvas] Verified node update:', {
+                            nodeId: node.id,
+                            hasExtractedFrameUrl: !!verifyNode?.data?.extractedFrameUrl,
+                            extractedFrameUrlLength: verifyNode?.data?.extractedFrameUrl?.length,
+                        });
+                    } catch (err) {
+                        console.error('[Canvas] Frame extraction failed:', err);
+                    }
+                } else {
+                    console.warn('[Canvas] No video URL found for extract node:', node.id);
+                }
             }
         }
+
+        // Wait for state to propagate if we made changes
+        if (needsSave) {
+            console.log('[Canvas] Waiting for state update...');
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Re-read nodes to confirm state
+            currentNodes = useWorkflowStore.getState().nodes;
+            const extractNode = currentNodes.find((n: any) => n.type === 'extract');
+            if (extractNode) {
+                console.log('[Canvas] Final extract node state:', {
+                    hasExtractedFrameUrl: !!extractNode.data?.extractedFrameUrl,
+                    extractedFrameUrlLength: extractNode.data?.extractedFrameUrl?.length,
+                });
+            }
+        }
+
+        // Save workflow (includes updated extract frame data)
+        console.log('[Canvas] Saving workflow...');
+        const saved = await saveToDatabase();
+        if (!saved) {
+            alert('Failed to save workflow. Please try again.');
+            return;
+        }
+        console.log('[Canvas] Workflow saved, starting run...');
+
         // Then run the workflow
         const currentWorkflowId = useWorkflowStore.getState().workflowId;
         await startRun(currentWorkflowId);
-    }, [isSaved, saveToDatabase, startRun]);
+    }, [saveToDatabase, startRun, updateNodeData]);
 
     // Handle edge reconnection start
     const onReconnectStart = useCallback(() => {

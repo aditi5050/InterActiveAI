@@ -1,28 +1,24 @@
 import React, { useCallback } from 'react';
-import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
+import { Handle, Position, NodeProps } from 'reactflow';
 import { Type, Trash2 } from 'lucide-react';
 import { useNodeStatus } from '@/hooks/useNodeStatus';
+import { useWorkflowStore } from '@/stores/workflowStore';
 
 export function TextNode({ id, data, selected }: NodeProps) {
-  const { setNodes } = useReactFlow();
+  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const status = useNodeStatus(id);
   const isRunning = status === 'RUNNING';
 
-  // Helper to update this node's data in React Flow
+  // Helper to update this node's data using Zustand store
   const updateData = useCallback((newData: Record<string, any>) => {
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
-    );
-  }, [id, setNodes]);
+    updateNodeData(id, newData);
+  }, [id, updateNodeData]);
 
   // Helper to delete this node from React Flow
   const deleteThisNode = useCallback(() => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-  }, [id, setNodes]);
+    deleteNode(id);
+  }, [id, deleteNode]);
 
   const onChange = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateData({ content: evt.target.value });

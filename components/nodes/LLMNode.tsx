@@ -16,31 +16,27 @@ const MODELS = [
 ];
 
 export function LLMNode({ id, data, selected }: NodeProps) {
-  const { getNodes, getEdges, setNodes } = useReactFlow();
+  const { getNodes, getEdges } = useReactFlow();
   const workflowId = useWorkflowStore((state) => state.workflowId);
   const isSaved = useWorkflowStore((state) => state.isSaved);
   const saveToDatabase = useWorkflowStore((state) => state.saveToDatabase);
+  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const status = useNodeStatus(id);
   const output = useNodeOutput(id);
   const error = useNodeError(id);
   const duration = useNodeDuration(id);
   const isRunning = status === "RUNNING";
 
-  // Helper to update this node's data in React Flow
+  // Helper to update this node's data using Zustand store
   const updateData = useCallback((newData: Record<string, any>) => {
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
-    );
-  }, [id, setNodes]);
+    updateNodeData(id, newData);
+  }, [id, updateNodeData]);
 
   // Helper to delete this node from React Flow
   const deleteThisNode = useCallback(() => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-  }, [id, setNodes]);
+    deleteNode(id);
+  }, [id, deleteNode]);
 
   const onModelChange = useCallback(
     (evt: React.ChangeEvent<HTMLSelectElement>) => {

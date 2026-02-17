@@ -9,11 +9,22 @@ const isPublicRoute = createRouteMatcher([
   "/api/upload(.*)",
 ]);
 
+// API routes handle their own auth - don't redirect from middleware
+const isApiRoute = createRouteMatcher(["/api(.*)"]);
+
 export default clerkMiddleware((auth, req) => {
-  // Only protect non-public routes
-  if (!isPublicRoute(req)) {
-    auth.protect();
+  // Skip protection for public routes
+  if (isPublicRoute(req)) {
+    return;
   }
+  
+  // API routes handle their own auth - don't call protect() which throws NEXT_NOT_FOUND
+  if (isApiRoute(req)) {
+    return;
+  }
+  
+  // Protect page routes (non-API)
+  auth.protect();
 });
 
 export const config = {

@@ -1,26 +1,23 @@
 import React, { useCallback, useRef } from 'react';
 import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
 import { Film, Trash2, Loader2, ArrowRight } from 'lucide-react';
+import { useWorkflowStore } from '@/stores/workflowStore';
 
 export function ExtractFrameNode({ id, data, selected }: NodeProps) {
-  const { getNodes, getEdges, setNodes } = useReactFlow();
+  const { getNodes, getEdges } = useReactFlow();
+  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Helper to update this node's data in React Flow
+  // Helper to update this node's data using Zustand store
   const updateData = useCallback((newData: Record<string, any>) => {
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
-    );
-  }, [id, setNodes]);
+    updateNodeData(id, newData);
+  }, [id, updateNodeData]);
  // a little commit to trigger update of commits
   // Helper to delete this node from React Flow
   const deleteThisNode = useCallback(() => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-  }, [id, setNodes]);
+    deleteNode(id);
+  }, [id, deleteNode]);
 
   const onTimestampChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
     updateData({ timestamp: evt.target.value });
@@ -50,12 +47,19 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
     return null;
   }, [id, getNodes, getEdges]);
 
+  // Max image dimension to avoid huge base64 strings
+  const MAX_IMAGE_DIMENSION = 1024;
+
   // Extract frame from video at specified timestamp
   const extractFrameFromVideo = useCallback((videoUrl: string, timestampInput: string): Promise<string> => {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.preload = 'metadata';
+      // Only set crossOrigin for http/https URLs, not for data: URLs
+      if (!videoUrl.startsWith('data:')) {
+        video.crossOrigin = 'anonymous';
+      }
+      video.preload = 'auto';
+      video.muted = true;
       
       video.onloadedmetadata = () => {
         // Parse timestamp - can be percentage (e.g. "50%") or seconds (e.g. "10")
@@ -76,10 +80,19 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
       };
       
       video.onseeked = () => {
-        // Create canvas and extract frame
+        // Scale down if video is too large
+        let width = video.videoWidth || 640;
+        let height = video.videoHeight || 480;
+        
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          const scale = MAX_IMAGE_DIMENSION / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = width;
+        canvas.height = height;
         
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -87,9 +100,10 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
           return;
         }
         
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, width, height);
         
-        const frameDataUrl = canvas.toDataURL('image/png');
+        // Use JPEG with quality 0.8 to reduce size
+        const frameDataUrl = canvas.toDataURL('image/jpeg', 0.8);
         resolve(frameDataUrl);
       };
       
@@ -98,6 +112,7 @@ export function ExtractFrameNode({ id, data, selected }: NodeProps) {
       };
       
       video.src = videoUrl;
+      video.load();
     });
   }, []);
 

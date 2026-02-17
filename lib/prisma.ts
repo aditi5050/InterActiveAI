@@ -1,16 +1,28 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
+import { Pool, PoolConfig } from 'pg';
 
 const prismaClientSingleton = () => {
   const connectionString = process.env.DATABASE_URL;
 
-  const pool = new Pool({
+  const poolConfig: PoolConfig = {
     connectionString,
-    max: 20,
-    idleTimeoutMillis: 60000,
-    connectionTimeoutMillis: 10000,
-    statement_timeout: 30000, // 30 second statement timeout
+    max: 10, // Reduced pool size for better stability
+    min: 2,  // Keep minimum connections alive
+    idleTimeoutMillis: 30000, // 30 seconds idle timeout
+    connectionTimeoutMillis: 10000, // 10 second connection timeout
+    allowExitOnIdle: false, // Keep connections alive
+  };
+
+  const pool = new Pool(poolConfig);
+
+  // Handle pool errors gracefully
+  pool.on('error', (err) => {
+    console.error('[Prisma Pool] Unexpected error on idle client:', err.message);
+  });
+
+  pool.on('connect', () => {
+    console.log('[Prisma Pool] New client connected');
   });
 
   const adapter = new PrismaPg(pool);

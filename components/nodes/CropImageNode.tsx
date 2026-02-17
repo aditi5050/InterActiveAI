@@ -1,25 +1,22 @@
 import React, { useCallback } from 'react';
 import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
 import { Crop, Trash2, Loader2, ArrowRight } from 'lucide-react';
+import { useWorkflowStore } from '@/stores/workflowStore';
 
 export function CropImageNode({ id, data, selected }: NodeProps) {
-  const { getNodes, getEdges, setNodes } = useReactFlow();
+  const { getNodes, getEdges } = useReactFlow();
+  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const deleteNode = useWorkflowStore((state) => state.deleteNode);
 
-  // Helper to update this node's data in React Flow
+  // Helper to update this node's data using Zustand store
   const updateData = useCallback((newData: Record<string, any>) => {
-    setNodes((nodes) => 
-      nodes.map((node) => 
-        node.id === id 
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
-    );
-  }, [id, setNodes]);
+    updateNodeData(id, newData);
+  }, [id, updateNodeData]);
 
   // Helper to delete this node from React Flow
   const deleteThisNode = useCallback(() => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-  }, [id, setNodes]);
+    deleteNode(id);
+  }, [id, deleteNode]);
 
   const onParamChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
     updateData({ [evt.target.name]: parseInt(evt.target.value) || 0 });
@@ -73,8 +70,16 @@ export function CropImageNode({ id, data, selected }: NodeProps) {
         // Calculate crop dimensions in pixels from percentages
         const cropX = (xPercent / 100) * img.width;
         const cropY = (yPercent / 100) * img.height;
-        const cropWidth = (widthPercent / 100) * img.width;
-        const cropHeight = (heightPercent / 100) * img.height;
+        let cropWidth = (widthPercent / 100) * img.width;
+        let cropHeight = (heightPercent / 100) * img.height;
+        
+        // Scale down if cropped image is too large (max 1024px)
+        const MAX_DIMENSION = 1024;
+        if (cropWidth > MAX_DIMENSION || cropHeight > MAX_DIMENSION) {
+          const scale = MAX_DIMENSION / Math.max(cropWidth, cropHeight);
+          cropWidth = Math.round(cropWidth * scale);
+          cropHeight = Math.round(cropHeight * scale);
+        }
         
         // Set canvas size to the crop dimensions
         canvas.width = cropWidth;
@@ -84,13 +89,13 @@ export function CropImageNode({ id, data, selected }: NodeProps) {
         ctx.drawImage(
           img,
           cropX, cropY,           // Source x, y
-          cropWidth, cropHeight,  // Source width, height
+          (widthPercent / 100) * img.width, (heightPercent / 100) * img.height,  // Source width, height
           0, 0,                   // Destination x, y
           cropWidth, cropHeight   // Destination width, height
         );
         
-        // Convert to base64 data URL
-        const croppedDataUrl = canvas.toDataURL('image/png');
+        // Convert to base64 data URL with JPEG compression
+        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
         resolve(croppedDataUrl);
       };
       

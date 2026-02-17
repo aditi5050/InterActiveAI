@@ -330,10 +330,28 @@ export const workflowRunJob = task({
                     break;
                   }
 
-                  case "image":
-                  case "video":
+                  case "image": {
+                    const config = node.config as any;
+                    // Prefer base64 if available, otherwise use URL
+                    const imageUrl = config?.imageBase64 || config?.imageUrl || config?.url;
+                    output = { 
+                      output: imageUrl, 
+                      url: config?.imageUrl || config?.url,
+                      image: imageUrl 
+                    };
+                    break;
+                  }
+
+                  case "video": {
+                    const config = node.config as any;
+                    const videoUrl = config?.videoUrl || config?.url;
+                    output = { output: videoUrl, url: videoUrl };
+                    break;
+                  }
+
                   case "text": {
-                    const text = (node.config as any)?.text;
+                    const config = node.config as any;
+                    const text = config?.content || config?.text || "";
                     output = { output: text, text };
                     break;
                   }

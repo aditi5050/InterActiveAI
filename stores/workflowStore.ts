@@ -329,6 +329,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   saveToDatabase: async () => {
     const { workflowId, workflowName, nodes, edges } = get();
     
+    // Debug: Log extract node data before save
+    const extractNodes = nodes.filter((n: any) => n.type === 'extract');
+    for (const n of extractNodes) {
+      console.log('[WorkflowStore] Extract node before save:', {
+        nodeId: (n as any).id,
+        hasExtractedFrameUrl: !!(n as any).data?.extractedFrameUrl,
+        extractedFrameUrlLength: (n as any).data?.extractedFrameUrl?.length,
+        dataKeys: Object.keys((n as any).data || {}),
+      });
+    }
+    
     // Generate a proper UUID if we have the default ID
     let idToUse = workflowId;
     if (workflowId === 'workflow_default' || !workflowId) {

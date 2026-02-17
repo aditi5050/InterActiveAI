@@ -88,15 +88,38 @@ export async function POST(
       // Create all nodes first
       if (definition.nodes && definition.nodes.length > 0) {
         await tx.workflowNode.createMany({
-          data: definition.nodes.map((node: any) => ({
-            id: node.id,
-            workflowId: params.id,
-            type: node.type,
-            label: node.data?.label || node.type,
-            config: node.data || {},
-            positionX: node.position?.x || 0,
-            positionY: node.position?.y || 0,
-          })),
+          data: definition.nodes.map((node: any) => {
+            // Clone node data but exclude large base64 fields from database
+            // These will be re-processed at execution time
+            const config = { ...node.data };
+            
+            // Don't save base64 data to DB - keep only URLs
+            // This drastically reduces save time and DB size
+            if (config.imageBase64 && config.imageUrl) {
+              delete config.imageBase64; // URL is sufficient, can fetch at runtime
+            }
+            // Don't strip croppedImageUrl/extractedFrameUrl since those ARE the processed results
+            
+            // Debug logging for extract nodes
+            if (node.type === 'extract') {
+              console.log('[SAVE] Extract node data:', {
+                nodeId: node.id,
+                hasExtractedFrameUrl: !!config.extractedFrameUrl,
+                extractedFrameUrlLength: config.extractedFrameUrl?.length,
+                configKeys: Object.keys(config),
+              });
+            }
+            
+            return {
+              id: node.id,
+              workflowId: params.id,
+              type: node.type,
+              label: config.label || node.type,
+              config,
+              positionX: node.position?.x || 0,
+              positionY: node.position?.y || 0,
+            };
+          }),
         });
       }
 
@@ -131,7 +154,8 @@ export async function POST(
         },
       });
     }, {
-      timeout: 30000, // 30 seconds timeout for slower connections
+      timeout: 60000, // 60 seconds timeout for slow remote databases
+      maxWait: 10000, // Wait up to 10s to acquire connection
     });
 
     return NextResponse.json(updatedWorkflow);

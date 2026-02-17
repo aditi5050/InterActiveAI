@@ -65,24 +65,45 @@ export const useWorkflowRuntimeStore = create<WorkflowRuntimeState>(
           nodeDurations: {},
           errors: [],
           isRunning: true,
-          runStatus: "PENDING",
+          runStatus: "RUNNING",
           workflowId,
         });
 
-        const response = await fetch("/api/runs/start", {
+        // Use direct execute endpoint (no Trigger.dev)
+        const response = await fetch("/api/runs/execute", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ workflowId, inputs }),
         });
 
-        if (!response.ok) throw new Error("Failed to start run");
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to execute workflow");
+        }
 
         const data = await response.json();
-        set({ runId: data.runId });
+        
+        // Update state with results
+        const nodeStatuses: Record<string, string> = {};
+        const nodeOutputs: Record<string, any> = {};
+        
+        for (const [nodeId, result] of Object.entries(data.results || {})) {
+          nodeStatuses[nodeId] = (result as any)?.status === "failed" ? "FAILED" : "COMPLETED";
+          nodeOutputs[nodeId] = result;
+        }
 
-        // Subscribe to SSE updates
-        get().subscribeToRun(data.runId);
+        set({ 
+          runId: data.runId,
+          nodeStatuses,
+          nodeOutputs,
+          isRunning: false, 
+          runStatus: data.status || "COMPLETED",
+        });
+
+        // Refresh runs list
+        get().fetchRuns(workflowId);
       } catch (error: any) {
+        console.error("[Runtime] startRun error:", error);
         set({ errors: [error.message], isRunning: false, runStatus: "FAILED" });
       }
     },
