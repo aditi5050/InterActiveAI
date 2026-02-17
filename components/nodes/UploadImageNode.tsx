@@ -59,34 +59,60 @@ export function UploadImageNode({ id, data, selected }: NodeProps) {
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
 
     try {
-      // Read file as data URL
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64String = reader.result as string;
-        
-        // Compress image if too large
-        const compressedBase64 = await compressImage(base64String);
-        
-        // Upload file
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        const result = await response.json();
-        
-        if (result.url) {
-          updateData({ 
-            imageUrl: result.url, 
-            imageBase64: compressedBase64,
-            fileName: file.name 
-          });
+      // 1. Get upload signature from server
+      const signatureResponse = await fetch('/api/upload/signature', {
+        method: 'POST',
+      });
+      
+      if (!signatureResponse.ok) {
+        throw new Error('Failed to get upload signature');
+      }
+
+      const { url, params, signature } = await signatureResponse.json();
+
+      // 2. Upload directly to Transloadit
+      const formData = new FormData();
+      formData.append('params', params);
+      formData.append('signature', signature);
+      formData.append('file', file);
+
+      const uploadResponse = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await uploadResponse.json();
+
+      if (uploadResponse.ok) {
+        let fileUrl = '';
+        if (result.results && result.results[':original'] && result.results[':original'][0]) {
+           fileUrl = result.results[':original'][0].ssl_url;
+        } else {
+           console.warn('Transloadit results not immediately available', result);
         }
-      };
-      reader.readAsDataURL(file);
+
+        if (fileUrl) {
+          // Read file as data URL for local preview (compressed)
+          const reader = new FileReader();
+          reader.onload = async () => {
+              const base64String = reader.result as string;
+              const compressedBase64 = await compressImage(base64String);
+              
+              updateData({ 
+                imageUrl: fileUrl, // Cloud URL
+                imageBase64: compressedBase64, // Local compressed preview
+                fileName: file.name 
+              });
+          };
+          reader.readAsDataURL(file);
+        } else {
+           console.error('Upload completed but no URL returned', result);
+        }
+      } else {
+        console.error('Upload failed:', result.error || 'Unknown error');
+      }
     } catch (error) {
       console.error('Upload failed', error);
     } finally {

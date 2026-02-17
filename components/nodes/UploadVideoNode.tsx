@@ -12,10 +12,13 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
   const [duration, setDuration] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   // Helper to update this node's data using Zustand store
   const updateData = useCallback((newData: Record<string, any>) => {
     updateNodeData(id, newData);
   }, [id, updateNodeData]);
+
 
   // Helper to delete this node from React Flow
   const deleteThisNode = useCallback(() => {
@@ -27,37 +30,125 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
   }, [deleteThisNode]);
 
   const onFileChange = useCallback(async (evt: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("onFileChange triggered for node:", id);
     const file = evt.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+        console.log("No file selected");
+        return;
+    }
 
+    console.log("File selected:", file.name, file.size, file.type);
+    setError(null);
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', 'video'); // Specify video type for API validation
 
+    // 1. Immediate Local Preview
+    // Create a local object URL for immediate feedback
+    let localUrl = '';
     try {
-      const response = await fetch('/api/upload', {
+        localUrl = URL.createObjectURL(file);
+        console.log("Setting local video preview:", localUrl);
+        updateData({ 
+            videoUrl: localUrl, 
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size
+        });
+        console.log("updateData called with localUrl");
+    } catch (e) {
+        console.error("Error creating object URL", e);
+        setError("Failed to create local preview");
+    }
+    
+    try {
+      // 2. Get upload signature from server
+      console.log("Fetching upload signature...");
+      const signatureResponse = await fetch('/api/upload/signature', {
+        method: 'POST',
+      });
+      
+      if (!signatureResponse.ok) {
+        throw new Error(`Failed to get upload signature: ${signatureResponse.statusText}`);
+      }
+
+      const { url, params, signature } = await signatureResponse.json();
+      console.log("Signature received", { url, paramsLength: params.length, signature });
+
+      // 3. Upload directly to Transloadit
+      console.log("Starting upload to Transloadit...");
+      const formData = new FormData();
+      formData.append('params', params);
+      formData.append('signature', signature);
+      formData.append('file', file);
+      
+      const uploadResponse = await fetch(url, {
         method: 'POST',
         body: formData,
       });
-      const result = await response.json();
       
-      if (response.ok && result.url) {
-        updateData({ 
-          videoUrl: result.url, 
-          fileName: file.name,
-          fileType: result.fileType,
-          fileSize: result.fileSize
-        });
+      if (!uploadResponse.ok) {
+         const errorText = await uploadResponse.text();
+         console.error('Transloadit Upload Error:', uploadResponse.status, errorText);
+         throw new Error(`Transloadit upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+      }
+
+      const result = await uploadResponse.json();
+      console.log("Upload complete, result:", result);
+
+      if (uploadResponse.ok) {
+        let fileUrl = '';
+        if (result.results && result.results[':original'] && result.results[':original'][0]) {
+           fileUrl = result.results[':original'][0].ssl_url;
+        } else {
+           console.warn('Transloadit results not immediately available', result);
+        }
+
+        if (fileUrl) {
+          // Update with the permanent remote URL
+          console.log("Upload successful, updating to remote URL:", fileUrl);
+          updateData({ 
+            videoUrl: fileUrl, 
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size
+          });
+        } else if (result.assembly_url) {
+           console.log("Results not ready, using assembly status URL or polling");
+           // If results are not immediately available, we can rely on the assembly_url or just wait.
+           // However, for Transloadit /upload/handle, it usually returns immediately.
+           // Maybe we need to check other result keys or assembly_ssl_url?
+           // If 'results' is empty, maybe the step failed or is processing?
+           // Let's try to use the assembly_ssl_url if available as a fallback (though it's just the status JSON)
+           
+           // Better fallback: Check if there are any uploads at all
+           if (result.uploads && result.uploads.length > 0) {
+               fileUrl = result.uploads[0].ssl_url;
+               console.log("Found file in uploads array:", fileUrl);
+               updateData({ 
+                    videoUrl: fileUrl, 
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileSize: file.size
+               });
+           } else {
+               console.error('Upload completed but no URL returned in results or uploads', result);
+               setError("Upload processed but no file URL returned.");
+           }
+        } else {
+           console.error('Upload completed but no URL returned', result);
+           setError("Upload completed but processing is pending.");
+        }
       } else {
         console.error('Upload failed:', result.error || 'Unknown error');
+        setError(result.error || "Upload failed due to unknown error");
       }
-    } catch (error) {
-      console.error('Upload failed', error);
+    } catch (error: any) {
+      console.error('Upload failed exception', error);
+      setError(error.message || "Upload failed");
     } finally {
       setUploading(false);
+      console.log("Upload process finished");
     }
-  }, [updateData]);
+  }, [id, updateData]);
 
   const togglePlayPause = useCallback(() => {
     if (!videoRef.current) return;
@@ -122,6 +213,7 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
           <div className="relative group">
             {/* Video Player */}
             <video 
+              key={data.videoUrl} // Force re-render on URL change
               ref={videoRef}
               src={data.videoUrl} 
               className="w-full h-36 object-contain rounded-md border border-[#2A2A2F] bg-black" 
@@ -130,6 +222,8 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
               onEnded={handleVideoEnded}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
+              controls={false} // Use custom controls
+              playsInline
             />
             
             {/* Custom Controls */}
@@ -138,14 +232,16 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={togglePlayPause}
-                  className="p-1.5 bg-[#EF4444] hover:bg-[#DC2626] rounded text-white transition-colors"
+                  className={`p-1.5 ${error ? 'bg-gray-500 cursor-not-allowed' : 'bg-[#EF4444] hover:bg-[#DC2626]'} rounded text-white transition-colors`}
                   title={isPlaying ? 'Pause' : 'Play'}
+                  disabled={!!error}
                 >
                   {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                 </button>
                 <span className="text-xs text-gray-400 font-mono">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
+                {uploading && <span className="text-xs text-blue-400 animate-pulse ml-2">Uploading...</span>}
               </div>
               
               {/* Seek Bar */}
@@ -160,9 +256,16 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
                 style={{
                   background: `linear-gradient(to right, #EF4444 0%, #EF4444 ${(currentTime / (duration || 1)) * 100}%, #2A2A2F ${(currentTime / (duration || 1)) * 100}%, #2A2A2F 100%)`
                 }}
+                disabled={!!error}
               />
             </div>
-
+            
+            {/* Error Message */}
+            {error && (
+              <div className="mt-2 text-xs text-red-500 bg-red-900/20 p-1 rounded border border-red-900/30">
+                {error}
+              </div>
+            )}
             {/* Remove Button */}
             <button 
               onClick={() => {
