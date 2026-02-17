@@ -84,7 +84,7 @@ export const useWorkflowRuntimeStore = create<WorkflowRuntimeState>(
         const data = await response.json();
         
         // Update state with results
-        const nodeStatuses: Record<string, string> = {};
+        const nodeStatuses: { [nodeId: string]: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "SKIPPED" } = {};
         const nodeOutputs: Record<string, any> = {};
         
         for (const [nodeId, result] of Object.entries(data.results || {})) {

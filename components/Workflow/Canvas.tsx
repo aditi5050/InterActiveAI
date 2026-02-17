@@ -136,14 +136,14 @@ const CanvasInner: React.FC<CanvasProps> = ({ onDragOver, onDrop }) => {
         
         // Pre-process extract frame nodes that don't have extracted frames yet
         for (const node of currentNodes) {
-            if (node.type === 'extract' && !node.data?.extractedFrameUrl) {
+            if ((node.type as string) === 'extract' && !(node.data as any)?.extractedFrameUrl) {
                 // Find connected video node
                 let videoUrl = null;
                 for (const edge of currentEdges) {
                     if (edge.target === node.id) {
                         const sourceNode = currentNodes.find((n: any) => n.id === edge.source);
-                        if (sourceNode?.type === 'video' && sourceNode.data?.videoUrl) {
-                            videoUrl = sourceNode.data.videoUrl;
+                        if ((sourceNode?.type as string) === 'video' && (sourceNode?.data as any)?.videoUrl) {
+                            videoUrl = (sourceNode?.data as any)?.videoUrl;
                             console.log('[Canvas] Found video URL for extract node:', node.id, 'URL length:', videoUrl?.length);
                             break;
                         }
@@ -153,7 +153,7 @@ const CanvasInner: React.FC<CanvasProps> = ({ onDragOver, onDrop }) => {
                 if (videoUrl) {
                     try {
                         console.log('[Canvas] Auto-extracting frame for node:', node.id);
-                        const timestamp = node.data?.timestamp || '0';
+                        const timestamp = (node.data as any)?.timestamp || '0';
                         const extractedFrameUrl = await extractFrameFromVideo(videoUrl, timestamp);
                         console.log('[Canvas] Extracted frame successfully, length:', extractedFrameUrl?.length);
                         updateNodeData(node.id, { extractedFrameUrl, isLoading: false });
@@ -165,8 +165,8 @@ const CanvasInner: React.FC<CanvasProps> = ({ onDragOver, onDrop }) => {
                         const verifyNode = verifyNodes.find((n: any) => n.id === node.id);
                         console.log('[Canvas] Verified node update:', {
                             nodeId: node.id,
-                            hasExtractedFrameUrl: !!verifyNode?.data?.extractedFrameUrl,
-                            extractedFrameUrlLength: verifyNode?.data?.extractedFrameUrl?.length,
+                            hasExtractedFrameUrl: !!(verifyNode?.data as any)?.extractedFrameUrl,
+                            extractedFrameUrlLength: (verifyNode?.data as any)?.extractedFrameUrl?.length,
                         });
                     } catch (err) {
                         console.error('[Canvas] Frame extraction failed:', err);
@@ -187,8 +187,8 @@ const CanvasInner: React.FC<CanvasProps> = ({ onDragOver, onDrop }) => {
             const extractNode = currentNodes.find((n: any) => n.type === 'extract');
             if (extractNode) {
                 console.log('[Canvas] Final extract node state:', {
-                    hasExtractedFrameUrl: !!extractNode.data?.extractedFrameUrl,
-                    extractedFrameUrlLength: extractNode.data?.extractedFrameUrl?.length,
+                    hasExtractedFrameUrl: !!(extractNode.data as any)?.extractedFrameUrl,
+                    extractedFrameUrlLength: (extractNode.data as any)?.extractedFrameUrl?.length,
                 });
             }
         }
