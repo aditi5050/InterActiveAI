@@ -1,19 +1,20 @@
-import { defineConfig } from "@trigger.dev/sdk/v3";
+import { TriggerConfig } from "@trigger.dev/sdk";
 
-export default defineConfig({
-  project: process.env.TRIGGER_PROJECT_ID || "proj_fvqimbkasyyitanhnyke",
+const config: TriggerConfig = {
+  // Your Production project ID (must match Trigger dashboard)
+  project: process.env.TRIGGER_PROJECT_ID!,
+
+  // Node runtime (recommended for Next.js + Prisma)
   runtime: "node",
-  logLevel: "log",
-  maxDuration: 3600, 
-  retries: {
-    enabledInDev: true,
-    default: {
-      maxAttempts: 3,
-      minTimeoutInMs: 1000,
-      maxTimeoutInMs: 10000,
-      factor: 2,
-      randomize: true,
-    },
-  },
-  dirs: ["trigger"],
-});
+
+  // Logging level
+  logLevel: "info",
+
+  // Maximum task execution time (seconds)
+  maxDuration: 3600,
+
+  // Directory where your tasks are located
+  dirs: ["./trigger"],
+};
+
+export default config;
