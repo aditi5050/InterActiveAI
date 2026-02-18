@@ -1,0 +1,67 @@
+{
+  "configPath": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-DenWZj\\Downloads\\NamahAI\\trigger.config.mjs",
+  "customConditions": [
+  ],
+  "queues": [
+  ],
+  "runtime": "node",
+  "runtimeVersion": "24.13.1",
+  "tasks": [
+    {
+      "entryPoint": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-DenWZj\\Downloads\\NamahAI\\trigger\\workflow.mjs",
+      "filePath": "trigger/workflow.ts",
+      "id": "task.llm",
+      "maxDuration": 3600,
+      "retry": {
+        "factor": 2,
+        "maxAttempts": 2,
+        "maxTimeoutInMs": 2000,
+        "minTimeoutInMs": 500,
+        "randomize": true
+      }
+    },
+    {
+      "entryPoint": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-DenWZj\\Downloads\\NamahAI\\trigger\\workflow.mjs",
+      "filePath": "trigger/workflow.ts",
+      "id": "task.cropImage",
+      "maxDuration": 3600,
+      "retry": {
+        "factor": 2,
+        "maxAttempts": 2,
+        "maxTimeoutInMs": 2000,
+        "minTimeoutInMs": 500,
+        "randomize": true
+      }
+    },
+    {
+      "entryPoint": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-DenWZj\\Downloads\\NamahAI\\trigger\\workflow.mjs",
+      "filePath": "trigger/workflow.ts",
+      "id": "task.extractFrame",
+      "maxDuration": 3600,
+      "retry": {
+        "factor": 2,
+        "maxAttempts": 2,
+        "maxTimeoutInMs": 2000,
+        "minTimeoutInMs": 500,
+        "randomize": true
+      }
+    },
+    {
+      "entryPoint": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-DenWZj\\Downloads\\NamahAI\\trigger\\workflow.mjs",
+      "filePath": "trigger/workflow.ts",
+      "id": "workflow.run",
+      "maxDuration": 3600,
+      "retry": {
+        "factor": 2,
+        "maxAttempts": 2,
+        "maxTimeoutInMs": 5000,
+        "minTimeoutInMs": 1000,
+        "randomize": true
+      }
+    }
+  ],
+  "timings": {
+    "trigger/workflow.ts": 515.5376
+  },
+  "workerEntryPoint": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-DenWZj\\AppData\\Local\\npm-cache\\_npx\\f51a09bd0abf5f10\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-run-worker.mjs"
+}

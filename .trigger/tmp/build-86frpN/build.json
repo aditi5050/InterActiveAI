@@ -1,0 +1,104 @@
+{
+  "build": {
+  },
+  "cliPackageVersion": "4.3.3",
+  "config": {
+    "dirs": [
+      "trigger"
+    ],
+    "project": "proj_fvqimbkasyyitanhnyke"
+  },
+  "configPath": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-86frpN\\Downloads\\NamahAI\\trigger.config.mjs",
+  "contentHash": "95e6d17b36439cc85be518f9614671a0",
+  "customConditions": [
+  ],
+  "deploy": {
+    "env": {
+    }
+  },
+  "environment": "dev",
+  "externals": [
+    {
+      "name": "import-in-the-middle",
+      "version": "1.11.0"
+    }
+  ],
+  "files": [
+    {
+      "entry": "trigger/workflow.ts",
+      "out": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-86frpN\\Downloads\\NamahAI\\trigger\\workflow.mjs"
+    }
+  ],
+  "indexWorkerEntryPoint": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-86frpN\\AppData\\Local\\npm-cache\\_npx\\f51a09bd0abf5f10\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-index-worker.mjs",
+  "otelImportHook": {
+    "include": [
+    ]
+  },
+  "outputHashes": {
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\AppData\\Local\\npm-cache\\_npx\\f51a09bd0abf5f10\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-index-worker.mjs": "BHjUMvBlxKM",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\AppData\\Local\\npm-cache\\_npx\\f51a09bd0abf5f10\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-index-worker.mjs.map": "qOm3yyv/4tc",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\AppData\\Local\\npm-cache\\_npx\\f51a09bd0abf5f10\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-run-worker.mjs": "FVd6W2Tf5Cw",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\AppData\\Local\\npm-cache\\_npx\\f51a09bd0abf5f10\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-run-worker.mjs.map": "zYoXhEksdUQ",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\Downloads\\NamahAI\\trigger.config.mjs": "Af4qjcdP1fQ",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\Downloads\\NamahAI\\trigger.config.mjs.map": "tQaG671gawM",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\Downloads\\NamahAI\\trigger\\workflow.mjs": "XEm0L7l3tNE",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\Downloads\\NamahAI\\trigger\\workflow.mjs.map": "s6HVXvWWbGc",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-4DNCWKMJ.mjs": "lzPg2jPPivM",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-4DNCWKMJ.mjs.map": "PHqdxeskei8",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-5A54AS5L.mjs": "xYRSY7qZ5bs",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-5A54AS5L.mjs.map": "LMPzUuAiOIM",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-EWL7EHZ2.mjs": "fnevhAKnd2A",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-EWL7EHZ2.mjs.map": "e3PMs+R0hCg",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-OVVRR5XE.mjs": "nFtz4Lim/c0",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-OVVRR5XE.mjs.map": "tvcllR0thZU",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-STN7UFEH.mjs": "MhNZl9lwYPg",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-STN7UFEH.mjs.map": "2Ij+Rp3GFzU",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-UJMUA4GH.mjs": "YVvnzswEH1s",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-UJMUA4GH.mjs.map": "Dc9d8EJ5p4g",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-V2NDATIP.mjs": "WEUTCe2NCk0",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\chunk-V2NDATIP.mjs.map": "dFkHpH8GWGY",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\crypto.node-TRQSYNXZ.mjs": "BDjY7zqgDuE",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\crypto.node-TRQSYNXZ.mjs.map": "UOjxhkR7aAk",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\crypto.node-VBQ2RLYX.mjs": "IV+H5eOm91E",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\crypto.node-VBQ2RLYX.mjs.map": "0b4tlwmkM3g",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\esm-K3TZ6WVS.mjs": "QkqN/V+7xwo",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\esm-K3TZ6WVS.mjs.map": "zxo7Rej3NZE",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\esm-WLX3G42W.mjs": "5CTANUgia8Q",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\esm-WLX3G42W.mjs.map": "VON93E1In1A",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-bsd-LD2TVS3J.mjs": "N2wgbErh8NI",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-bsd-LD2TVS3J.mjs.map": "2DC8rpXPEBw",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-darwin-HBMYLM7G.mjs": "ShKA9oE0KY0",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-darwin-HBMYLM7G.mjs.map": "rj0qNkjuJz4",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-linux-6LSHYYPK.mjs": "jvWXYxLQIno",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-linux-6LSHYYPK.mjs.map": "tEG+W6mjhBA",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-unsupported-RW34EDQV.mjs": "fJNmInQAPO0",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-unsupported-RW34EDQV.mjs.map": "9ZilwUzbXwo",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-win-3TMAUJLX.mjs": "23u+aB+mF8k",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\getMachineId-win-3TMAUJLX.mjs.map": "Pz1OdOeVpBE",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\s2s-5MJHRG76.mjs": "JFlDswKGAVE",
+    "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-Pb6IUa\\s2s-5MJHRG76.mjs.map": "6lagpEeobu8"
+  },
+  "outputPath": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-86frpN",
+  "packageVersion": "4.3.3",
+  "runWorkerEntryPoint": "C:\\Users\\Axxela\\Downloads\\NamahAI\\.trigger\\tmp\\build-86frpN\\AppData\\Local\\npm-cache\\_npx\\f51a09bd0abf5f10\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-run-worker.mjs",
+  "runtime": "node",
+  "sources": {
+    "package.json": {
+      "contentHash": "dfdcae73195a5001e5fa11447ccb8b58",
+      "contents": "eJx1VMGSoyAQvecrKM9jK2oSa0457HekipWOxcYABWiSnZp/3wKMspnkJv2a7n6vH35tCMkku2D2SbIrsumeM5FLvLnsw0MTGiuU9GgJFMoY1UZMzPk7zowYQrYzQjubfZKvDSGEZBwnf8uXIv77I4Z/j2LgCxBPM2QdM26B4mmGBiFXJBxm4KrMGU2A9I04I/oeDXCcDgNzaGPrDSHfYUiOGiVH2QlMJj10A5pz4Wv/8eHsuIN6D/Wjx6FXqh+w6FGiYU5MmDMR8kqoGqBLnjbCXljBONMOTa77kLSHZtYtyekGgZHSE55QKAyyLuQ0UCfjpCmWn18k3DXaYm7fAt2l9QM2jiIs4UhLKBP0dj8N6ro2PtIKaJLQDfYW4hXQlThnDvOTjNo1i008ohzKKVbaQwXNA+gt0yFcA22gWvY8doJjvvYvYbur13rBmKHaf21Wqm0SDEr/lDgh10L1FM+5urzDvDQRo0DpysUxMVyF5PkFTY8zq6ShM0zaQTEu3KzQfr28bqJON/FX8blQVUO7REfrmIzIFkqgNPX29Ou1vR/zddYWWlnX2XVTtH1yhlQ8Uqh8+R/GeSdeCr/RkI1OaYMncYsP1nuvgWpRAu3jlR9b2CaejUDeKXkSff6wwJMDEl4tbGH3vJzXpMPU4c81a5p4bRL+BzJfKv0lr/Xm+x/Q+lVa"
+    },
+    "trigger.config.ts": {
+      "contentHash": "df77ce0659546ef2a9e97d91b40b0862",
+      "contents": "eJxlUcFqwkAQvQfyD8OeWgiaVuhhvbSoSEpLi3grRVZ3kk6T3bW7k6BV/72YiK30MjO8N+/xhiGzdp5hBxpzsjhyNqcCDpB7Z0Dcs6eiQN/T2PSDLvvNQAzjKI5w08o05qqu+EJ8tYsjgLV3n7hieRxWGEIPbdObz7LpdDJbvM5eHiej+SIbw34P4ri7yJsvMstShe2WWNkPuy1RJEcrX1smgxKEdfqEVa54wgYrCaJyRYcZtRnXXjE5K2Fwl6YJtHJkTxgktLkA0KplhTqzY2wksK8x6YjTMefF1vGBGc2ag4RBcobJzsmgqzmzz0HCTZqmyR/NP/KXzdWKnZdwe0a8stoZ+saLLIe2d1WTDxLexOkX4j2Jo8P1MI5+AL+ig78="
+    },
+    "trigger/workflow.ts": {
+      "contentHash": "fd5e4db6b39ea081a6128d249ec67720",
+      "contents": "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"
+    },
+    "tsconfig.json": {
+      "contentHash": "c8d2526d19aa79711021b9c4e8d07d57",
+      "contents": "eJxdUstqwzAQvBv8D0JH49ohx5wKpYeGhkKhpxCCbC/NNnqhh+sS8u9l5dgkPmk9M57V7OqSZ4zx1iiLEtyHDWi05xt2IZwxHoT7hsA3jINfr9YrXt4IiQ3fsD3vjOIlo6PCAE40EugbvIYh8MMkF1Ka3y05BxdhQv0Z7Ts2Lydoz0sqOGzDAtTmVeESBL8zXZTwpgM4YxesStwYIF3pkfgEb2Sk1CRpou4kuFnjiO1h643eTT735uiNFAG6kVym+/EDmVoHHlwPsyvq1oECHYRc/GFl/MY0//2IsGkRY3yhUpKUY8KvYzFPuhEevhw582puaUU43a2VMf5cF2l/VV3ww4gmp2uZZ+lNoG5l7CCJqOET6L7qquBpvUVRF4/lQHVFwjr8WfD1JBkvxmG4szMdHNVtZiXjNjYSW6pMDHQchWtP2KeXZB16JWoPkJof8uyaZ/9Qo7wZ"
+    }
+  },
+  "target": "dev"
+}

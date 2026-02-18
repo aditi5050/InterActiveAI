@@ -5,6 +5,7 @@ import { useWorkflowStore } from '@/stores/workflowStore';
 
 export function UploadVideoNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const saveToDatabase = useWorkflowStore((state) => state.saveToDatabase);
   const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const [uploading, setUploading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -111,6 +112,9 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
             fileType: file.type,
             fileSize: file.size
           });
+          
+          // Save to DB so backend has access to the new URL
+          setTimeout(() => saveToDatabase(), 100);
         } else if (result.assembly_url) {
            console.log("Results not ready, using assembly status URL or polling");
            // If results are not immediately available, we can rely on the assembly_url or just wait.
@@ -129,6 +133,9 @@ export function UploadVideoNode({ id, data, selected }: NodeProps) {
                     fileType: file.type,
                     fileSize: file.size
                });
+               
+               // Save to DB so backend has access to the new URL
+               setTimeout(() => saveToDatabase(), 100);
            } else {
                console.error('Upload completed but no URL returned in results or uploads', result);
                setError("Upload processed but no file URL returned.");

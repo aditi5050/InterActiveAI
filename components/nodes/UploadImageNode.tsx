@@ -37,6 +37,7 @@ const compressImage = (dataUrl: string): Promise<string> => {
 
 export function UploadImageNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const saveToDatabase = useWorkflowStore((state) => state.saveToDatabase);
   const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const [uploading, setUploading] = useState(false);
 
@@ -120,6 +121,9 @@ export function UploadImageNode({ id, data, selected }: NodeProps) {
                 imageBase64: compressedBase64, // Local compressed preview/storage
                 fileName: file.name 
               });
+              
+              // Save to DB so backend has access to the new URL
+              setTimeout(() => saveToDatabase(), 100);
           };
           reader.readAsDataURL(file);
         } else {

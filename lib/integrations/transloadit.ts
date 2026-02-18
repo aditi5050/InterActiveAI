@@ -13,12 +13,15 @@ const transloadit = new Transloadit({
 });
 
 // Helper to wrap Transloadit assembly execution
-async function runAssembly(params: any) {
+async function runAssembly(assemblyParams: any) {
   if (!key || !secret) throw new Error("Transloadit credentials missing");
 
   try {
-    // The `createAssembly` method expects the params directly, not wrapped
-    const result = await transloadit.createAssembly(params);
+    // The SDK expects options object with 'params' property
+    const result = await transloadit.createAssembly({
+      params: assemblyParams,
+      waitForCompletion: true
+    });
     return result;
   } catch (err) {
     console.error("[TRANSLOADIT_ASSEMBLY_ERROR]", err);
@@ -58,7 +61,6 @@ export async function cropImage(imageUrl: string, options: { width?: number; hei
   
   const params = {
     steps,
-    wait: true // Wait for assembly to finish
   };
 
   try {
@@ -94,7 +96,6 @@ export async function extractFrame(videoUrl: string, timestamp: number = 0) {
 
   const params = {
     steps,
-    wait: true
   };
 
   try {

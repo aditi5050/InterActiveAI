@@ -185,219 +185,240 @@ export const workflowRunJob = task({
 
         if (readyNodes.length > 0) {
           console.log(
-            `[WORKFLOW] Executing ${readyNodes.length} ready nodes: ${readyNodes
+            `[WORKFLOW] Executing ${readyNodes.length} ready nodes sequentially: ${readyNodes
               .map((n) => n.label)
               .join(", ")}`
           );
 
-          await Promise.all(
-            readyNodes.map(async (node) => {
-              const exec = getExecution(node.id)!;
+          // Execute ready nodes sequentially to avoid parallel waits
+          for (const node of readyNodes) {
+            const exec = getExecution(node.id)!;
+
+            await prisma.nodeExecution.update({
+              where: { id: exec.id },
+              data: { status: "RUNNING", startedAt: new Date() },
+            });
+
+            try {
+              const parentEdges = edges.filter((e) => e.targetId === node.id);
+              const nodeInputs: any = {
+                ...inputs,
+                ...(node.config as any),
+              };
+
+              // Gather inputs from upstream
+              for (const edge of parentEdges) {
+                const parentExec = getExecution(edge.sourceId);
+                if (parentExec?.outputs) {
+                  const outputs: any = parentExec.outputs;
+
+                  if (edge.targetHandle) {
+                    const potentialVal =
+                      outputs.output ||
+                      outputs.text ||
+                      outputs.url;
+                    
+                    // Ensure we only pass non-empty strings as value
+                    const val = (typeof potentialVal === 'string' && potentialVal.length > 0) ? potentialVal : null;
+
+                    if (val) {
+                        if (edge.targetHandle === "images") {
+                          if (!nodeInputs.images) nodeInputs.images = [];
+                          if (Array.isArray(val)) {
+                            nodeInputs.images.push(...val);
+                          } else {
+                            nodeInputs.images.push(val);
+                          }
+                        } else {
+                          nodeInputs[edge.targetHandle] = val;
+                        }
+                    }
+                  } else {
+                    Object.assign(nodeInputs, outputs);
+                  }
+                }
+              }
+
+              let output: any = {};
+              const startTime = Date.now();
+
+              // Execute node based on type
+              switch (node.type) {
+                case "llm": {
+                  // Support both camelCase (from node data) and snake_case (from edges)
+                  const system = nodeInputs.system || nodeInputs.systemPrompt || nodeInputs.system_prompt;
+                  const user = nodeInputs.user || nodeInputs.userPrompt || nodeInputs.user_message || nodeInputs.prompt;
+                  const images = nodeInputs.images || [];
+                  const model =
+                    (node.config as any)?.model || "gemini-2.5-flash";
+
+                  let fullPrompt = "";
+                  if (system) fullPrompt += `System: ${system}\n\n`;
+                  if (user) fullPrompt += `User: ${user}`;
+                  if (!fullPrompt) fullPrompt = "Explain this.";
+
+                  let result;
+                  if (images && images.length > 0) {
+                    // Use triggerAndWait to get the actual result
+                    result = await llmTask.triggerAndWait({
+                      prompt: fullPrompt,
+                      imageUrls: images,
+                      model,
+                    });
+                  } else {
+                    // Use triggerAndWait to get the actual result
+                    result = await llmTask.triggerAndWait({
+                      prompt: fullPrompt,
+                      model,
+                    });
+                  }
+
+                  // Unwrap result if it's a task wrapper object
+                  let actualResult = result;
+                  if (result && typeof result === 'object' && 'output' in result && typeof (result as any).output === 'string') {
+                       actualResult = (result as any).output;
+                  }
+
+                  output = {
+                    output: actualResult ?? "No output",
+                    text: actualResult ?? "No output",
+                  };
+                  break;
+                }
+
+                case "crop": {
+                  const cropUrl =
+                    nodeInputs.image_url ||
+                    nodeInputs.url ||
+                    nodeInputs.image;
+                  if (!cropUrl) throw new Error("No image URL provided");
+
+                  // Use triggerAndWait to get the actual result
+                  const cropResult = await cropImageTask.triggerAndWait({
+                    imageUrl: cropUrl,
+                    width: (node.config as any)?.width_percent,
+                    height: (node.config as any)?.height_percent,
+                  });
+
+                  // Unwrap result if it's a task wrapper object
+                  let actualCropResult = cropResult;
+                  if (cropResult && typeof cropResult === 'object' && 'output' in cropResult) {
+                       actualCropResult = (cropResult as any).output;
+                  }
+
+                  const resultUrl =
+                    typeof actualCropResult === "object" && actualCropResult !== null
+                      ? (actualCropResult as any).url || (actualCropResult as any).output
+                      : actualCropResult;
+
+                  output = {
+                    output: resultUrl,
+                    url: resultUrl,
+                  };
+                  break;
+                }
+
+                case "extract": {
+                  console.log(`[EXTRACT_NODE] Node ${node.id} Inputs:`, JSON.stringify(nodeInputs));
+                  const videoUrl =
+                    nodeInputs.video_url ||
+                    nodeInputs.url ||
+                    nodeInputs.video;
+                  if (!videoUrl) throw new Error("No video URL provided");
+
+                  // Use triggerAndWait to get the actual result
+                  const frameResult = await extractFrameTask.triggerAndWait({
+                    videoUrl,
+                    timestamp: parseFloat(
+                      (node.config as any)?.timestamp ||
+                        nodeInputs.timestamp ||
+                        "0"
+                    ),
+                  });
+
+                  // Unwrap result if it's a task wrapper object
+                  let actualFrameResult = frameResult;
+                  if (frameResult && typeof frameResult === 'object' && 'output' in frameResult) {
+                       actualFrameResult = (frameResult as any).output;
+                  }
+
+                  const resultUrl =
+                    typeof actualFrameResult === "object" && actualFrameResult !== null
+                      ? (actualFrameResult as any).url || (actualFrameResult as any).output
+                      : actualFrameResult;
+
+                  output = {
+                    output: resultUrl,
+                    url: resultUrl,
+                    image: resultUrl,
+                  };
+                  break;
+                }
+
+                case "image": {
+                  const config = node.config as any;
+                  // Prefer base64 if available, otherwise use URL
+                  const imageUrl = config?.imageBase64 || config?.imageUrl || config?.url;
+                  output = { 
+                    output: imageUrl, 
+                    url: config?.imageUrl || config?.url,
+                    image: imageUrl 
+                  };
+                  break;
+                }
+
+                case "video": {
+                  const config = node.config as any;
+                  console.log(`[VIDEO_NODE] Node ${node.id} Config:`, JSON.stringify(config));
+                  const videoUrl = config?.videoUrl || config?.url;
+                  output = { output: videoUrl, url: videoUrl };
+                  break;
+                }
+
+                case "text": {
+                  const config = node.config as any;
+                  const text = config?.content || config?.text || "";
+                  output = { output: text, text };
+                  break;
+                }
+
+                default:
+                  console.warn(`Unknown node type ${node.type}`);
+                  output = { status: "skipped" };
+              }
+
+              const duration = Date.now() - startTime;
 
               await prisma.nodeExecution.update({
                 where: { id: exec.id },
-                data: { status: "RUNNING", startedAt: new Date() },
+                data: {
+                  status: "COMPLETED",
+                  completedAt: new Date(),
+                  duration,
+                  inputs: nodeInputs,
+                  outputs: output as any,
+                },
               });
 
-              try {
-                const parentEdges = edges.filter((e) => e.targetId === node.id);
-                const nodeInputs: any = {
-                  ...inputs,
-                  ...(node.config as any),
-                };
+              exec.status = "COMPLETED";
+              exec.outputs = output as any;
+              changed = true;
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              console.error(`[WORKFLOW] Node ${node.id} failed:`, errorMsg);
 
-                // Gather inputs from upstream
-                for (const edge of parentEdges) {
-                  const parentExec = getExecution(edge.sourceId);
-                  if (parentExec?.outputs) {
-                    const outputs: any = parentExec.outputs;
+              await prisma.nodeExecution.update({
+                where: { id: exec.id },
+                data: {
+                  status: "FAILED",
+                  error: errorMsg,
+                  completedAt: new Date(),
+                },
+              });
 
-                    if (edge.targetHandle) {
-                      const val =
-                        outputs.output ||
-                        outputs.text ||
-                        outputs.url ||
-                        outputs;
-
-                      if (edge.targetHandle === "images") {
-                        if (!nodeInputs.images) nodeInputs.images = [];
-                        if (Array.isArray(val)) {
-                          nodeInputs.images.push(...val);
-                        } else {
-                          nodeInputs.images.push(val);
-                        }
-                      } else {
-                        nodeInputs[edge.targetHandle] = val;
-                      }
-                    } else {
-                      Object.assign(nodeInputs, outputs);
-                    }
-                  }
-                }
-
-                let output: any = {};
-                const startTime = Date.now();
-
-                // Execute node based on type
-                switch (node.type) {
-                  case "llm": {
-                    // Support both camelCase (from node data) and snake_case (from edges)
-                    const system = nodeInputs.system || nodeInputs.systemPrompt || nodeInputs.system_prompt;
-                    const user = nodeInputs.user || nodeInputs.userPrompt || nodeInputs.user_message || nodeInputs.prompt;
-                    const images = nodeInputs.images || [];
-                    const model =
-                      (node.config as any)?.model || "gemini-2.5-flash";
-
-                    let fullPrompt = "";
-                    if (system) fullPrompt += `System: ${system}\n\n`;
-                    if (user) fullPrompt += `User: ${user}`;
-                    if (!fullPrompt) fullPrompt = "Explain this.";
-
-                    let result;
-                    if (images && images.length > 0) {
-                      // Use triggerAndWait to get the actual result
-                      result = await llmTask.triggerAndWait({
-                        prompt: fullPrompt,
-                        imageUrls: images,
-                        model,
-                      });
-                    } else {
-                      // Use triggerAndWait to get the actual result
-                      result = await llmTask.triggerAndWait({
-                        prompt: fullPrompt,
-                        model,
-                      });
-                    }
-
-                    // Unwrap result if it's a task wrapper object
-                    let actualResult = result;
-                    if (result && typeof result === 'object' && 'output' in result && typeof (result as any).output === 'string') {
-                         actualResult = (result as any).output;
-                    }
-
-                    output = {
-                      output: actualResult ?? "No output",
-                      text: actualResult ?? "No output",
-                    };
-                    break;
-                  }
-
-                  case "crop": {
-                    const cropUrl =
-                      nodeInputs.image_url ||
-                      nodeInputs.url ||
-                      nodeInputs.image;
-                    if (!cropUrl) throw new Error("No image URL provided");
-
-                    // Use triggerAndWait to get the actual result
-                    const cropResult = await cropImageTask.triggerAndWait({
-                      imageUrl: cropUrl,
-                      width: (node.config as any)?.width_percent,
-                      height: (node.config as any)?.height_percent,
-                    });
-                    const resultUrl =
-                      typeof cropResult === "object" && cropResult !== null
-                        ? (cropResult as any).url
-                        : cropResult;
-                    output = {
-                      output: resultUrl,
-                      url: resultUrl,
-                    };
-                    break;
-                  }
-
-                  case "extract": {
-                    const videoUrl =
-                      nodeInputs.video_url ||
-                      nodeInputs.url ||
-                      nodeInputs.video;
-                    if (!videoUrl) throw new Error("No video URL provided");
-
-                    // Use triggerAndWait to get the actual result
-                    const frameResult = await extractFrameTask.triggerAndWait({
-                      videoUrl,
-                      timestamp: parseFloat(
-                        (node.config as any)?.timestamp ||
-                          nodeInputs.timestamp ||
-                          "0"
-                      ),
-                    });
-                    const resultUrl =
-                      typeof frameResult === "object" && frameResult !== null
-                        ? (frameResult as any).url
-                        : frameResult;
-                    output = {
-                      output: resultUrl,
-                      url: resultUrl,
-                      image: resultUrl,
-                    };
-                    break;
-                  }
-
-                  case "image": {
-                    const config = node.config as any;
-                    // Prefer base64 if available, otherwise use URL
-                    const imageUrl = config?.imageBase64 || config?.imageUrl || config?.url;
-                    output = { 
-                      output: imageUrl, 
-                      url: config?.imageUrl || config?.url,
-                      image: imageUrl 
-                    };
-                    break;
-                  }
-
-                  case "video": {
-                    const config = node.config as any;
-                    const videoUrl = config?.videoUrl || config?.url;
-                    output = { output: videoUrl, url: videoUrl };
-                    break;
-                  }
-
-                  case "text": {
-                    const config = node.config as any;
-                    const text = config?.content || config?.text || "";
-                    output = { output: text, text };
-                    break;
-                  }
-
-                  default:
-                    console.warn(`Unknown node type ${node.type}`);
-                    output = { status: "skipped" };
-                }
-
-                const duration = Date.now() - startTime;
-
-                await prisma.nodeExecution.update({
-                  where: { id: exec.id },
-                  data: {
-                    status: "COMPLETED",
-                    completedAt: new Date(),
-                    duration,
-                    inputs: nodeInputs,
-                    outputs: output as any,
-                  },
-                });
-
-                exec.status = "COMPLETED";
-                exec.outputs = output as any;
-                changed = true;
-              } catch (error) {
-                const errorMsg = error instanceof Error ? error.message : String(error);
-                console.error(`[WORKFLOW] Node ${node.id} failed:`, errorMsg);
-
-                await prisma.nodeExecution.update({
-                  where: { id: exec.id },
-                  data: {
-                    status: "FAILED",
-                    error: errorMsg,
-                    completedAt: new Date(),
-                  },
-                });
-
-                exec.status = "FAILED";
-              }
-            })
-          );
+              exec.status = "FAILED";
+            }
+          }
         } else {
           break;
         }

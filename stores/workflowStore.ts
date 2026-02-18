@@ -151,16 +151,20 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   onConnect: (connection) => {
     const { nodes, edges } = get();
+    const targetNode = nodes.find((n) => n.id === connection.target);
     const targetHandle = connection.targetHandle;
 
-    // Bug fix #2: Check if target handle already has a connection
-    // Prevent multiple connections to the same target handle
-    const existingConnection = edges.find(
-      (edge) => edge.target === connection.target && edge.targetHandle === targetHandle
-    );
-    if (existingConnection) {
-      // Target handle already has a connection - don't allow another
-      return;
+    // Allow multiple connections ONLY to the 'images' handle of an 'llm' node
+    const isLlmImagesHandle = targetNode?.type === 'llm' && targetHandle === 'images';
+
+    if (!isLlmImagesHandle) {
+        // Prevent multiple connections to the same target handle for all other nodes/handles
+        const existingConnection = edges.find(
+          (edge) => edge.target === connection.target && edge.targetHandle === targetHandle
+        );
+        if (existingConnection) {
+          return;
+        }
     }
 
     // Bug fix #1: Validate connection types
