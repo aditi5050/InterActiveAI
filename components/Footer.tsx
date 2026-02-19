@@ -50,7 +50,7 @@ export default function Footer() {
             className="hide-mobile-landscape"
           >
             <p className="text-size-small paragraph-line-height-1-15">
-              Weavy{" "}
+              NAMAH{" "}
               <span className="span_text-opct-60-mobile">
                 is a new way to create. We’re bridging the gap between AI
                 capabilities and human creativity, to continue the tradition of
